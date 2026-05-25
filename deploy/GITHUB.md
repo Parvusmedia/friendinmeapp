@@ -9,7 +9,7 @@ El archivo **`.env` con secretos no va al repositorio** (está en `.gitignore`).
 ```bash
 cd /opt/apps/friendinme
 git init
-git remote add origin git@github.com:TU_ORG/friendinme.git
+git remote add origin git@github.com:Parvusmedia/friendinmeapp.git
 git add -A
 git status   # comprueba que NO aparece backend/.env
 git commit -m "FriendInMe MVP"
@@ -77,7 +77,7 @@ Una vez el código está en GitHub:
 ```bash
 sudo mkdir -p /opt/apps
 cd /opt/apps
-git clone git@github.com:TU_ORG/friendinme.git
+git clone git@github.com:Parvusmedia/friendinmeapp.git
 cd friendinme/backend
 cp .env.example .env
 nano .env   # una sola vez: DATABASE_URL, JWT, CORS, PUBLIC_BASE_URL, UPLOAD_DIR
