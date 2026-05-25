@@ -1,0 +1,132 @@
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.orm import Session
+
+from app.config import get_settings
+from app.database import get_db
+from app.models.adopter import AdopterProfile
+from app.models.dog import Dog
+from app.models.enums import DogStatus
+from app.models.match_result import MatchResult
+from app.schemas.match import (
+    MatchBreakdownRead,
+    MatchDogResult,
+    MatchRunRequest,
+    MatchRunResponse,
+    MatchStoredRead,
+)
+from app.services.ai_service import AIService
+from app.services.match_engine import MatchComputation, compute_match
+from app.utils.rate_limit import check_rate_limit
+
+router = APIRouter(prefix="/matches", tags=["matches"])
+
+
+def _comp_to_result(comp: MatchComputation, *, ai_explanation: str | None = None) -> MatchDogResult:
+    breakdown = [
+        MatchBreakdownRead(key=b.key, label=b.label, percent=b.percent, status=b.status)
+        for b in (comp.breakdown or [])
+    ]
+    return MatchDogResult(
+        dog_id=comp.dog_id,
+        compatibility_score=comp.compatibility_score,
+        match_level=comp.match_level,
+        reasons=comp.reasons,
+        warnings=comp.warnings,
+        ai_explanation=ai_explanation,
+        breakdown=breakdown,
+    )
+
+
+@router.get("/preview", response_model=MatchDogResult)
+def preview_match(
+    adopter_profile_id: int = Query(..., ge=1),
+    dog_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+) -> MatchDogResult:
+    adopter = db.get(AdopterProfile, adopter_profile_id)
+    if not adopter:
+        raise HTTPException(status_code=404, detail="Perfil adoptante no encontrado")
+    dog = db.get(Dog, dog_id)
+    if not dog:
+        raise HTTPException(status_code=404, detail="Perro no encontrado")
+    comp = compute_match(adopter, dog)
+    return _comp_to_result(comp)
+
+
+@router.post("", response_model=MatchRunResponse)
+async def run_matches(
+    payload: MatchRunRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> MatchRunResponse:
+    settings = get_settings()
+    check_rate_limit(
+        request,
+        key="matches",
+        limit=settings.rate_limit_matches_per_minute,
+        window_seconds=60,
+    )
+    adopter = db.get(AdopterProfile, payload.adopter_profile_id)
+    if not adopter:
+        raise HTTPException(status_code=404, detail="Perfil adoptante no encontrado")
+
+    db.query(MatchResult).filter(MatchResult.adopter_profile_id == adopter.id).delete(synchronize_session=False)
+    db.commit()
+
+    if payload.dog_id is not None:
+        dog = db.get(Dog, payload.dog_id)
+        if not dog or dog.status != DogStatus.available:
+            raise HTTPException(status_code=404, detail="Perro no disponible para match")
+        dogs = [dog]
+    else:
+        dogs = db.query(Dog).filter(Dog.status == DogStatus.available).all()
+    ai = AIService()
+    computations: list[tuple[Dog, MatchComputation]] = [(dog, compute_match(adopter, dog)) for dog in dogs]
+    computations.sort(key=lambda x: x[1].compatibility_score, reverse=True)
+    top_ids = {dog.id for dog, _ in computations[: payload.top_n]}
+
+    for dog, comp in computations:
+        explanation = None
+        if payload.use_ai and dog.id in top_ids:
+            explanation = await ai.explain_match(dog, comp)
+        db.add(
+            MatchResult(
+                adopter_profile_id=adopter.id,
+                dog_id=dog.id,
+                compatibility_score=comp.compatibility_score,
+                match_level=comp.match_level,
+                reasons=comp.reasons,
+                warnings=comp.warnings,
+                ai_explanation=explanation,
+            )
+        )
+    db.commit()
+
+    out: list[MatchDogResult] = []
+    for dog, comp in computations[: payload.top_n]:
+        mr = (
+            db.query(MatchResult)
+            .filter(
+                MatchResult.adopter_profile_id == adopter.id,
+                MatchResult.dog_id == dog.id,
+            )
+            .one()
+        )
+        out.append(_comp_to_result(comp, ai_explanation=mr.ai_explanation))
+    return MatchRunResponse(adopter_profile_id=adopter.id, results=out)
+
+
+@router.get("/{adopter_profile_id}", response_model=list[MatchStoredRead])
+def get_matches(
+    adopter_profile_id: int,
+    db: Session = Depends(get_db),
+    refresh: bool = Query(False),
+) -> list[MatchResult]:
+    if refresh:
+        raise HTTPException(status_code=400, detail="Usa POST /matches para recalcular")
+    return (
+        db.query(MatchResult)
+        .filter(MatchResult.adopter_profile_id == adopter_profile_id)
+        .order_by(MatchResult.compatibility_score.desc())
+        .all()
+    )

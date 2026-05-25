@@ -1,0 +1,21 @@
+[Unit]
+Description=FriendInMe Next.js
+After=network.target friendinme-api.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=cursorbot
+Group=cursorbot
+WorkingDirectory=/opt/apps/friendinme/frontend
+Environment=NODE_ENV=production
+Environment=INTERNAL_API_URL=http://127.0.0.1:8000
+Environment=NEXT_PUBLIC_API_URL=
+# Puerto 3010: evita choque con otros Next (p. ej. linkedinreport en 3000)
+ExecStart=/opt/apps/friendinme/frontend/node_modules/.bin/next start -p 3010
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

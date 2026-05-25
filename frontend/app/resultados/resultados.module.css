@@ -1,0 +1,12 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.shareOk {
+  font-size: 0.9rem;
+  color: var(--accent);
+  margin: 0;
+}

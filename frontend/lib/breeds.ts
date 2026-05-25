@@ -1,0 +1,20 @@
+/** Debe coincidir con backend/app/constants/breeds.py BREED_OPTIONS */
+export const BREED_OPTIONS = [
+  "Mestizo",
+  "Galgo",
+  "Podenco",
+  "Mastín",
+  "Pastor alemán",
+  "Labrador",
+  "Golden retriever",
+  "Beagle",
+  "Chihuahua",
+  "Yorkshire",
+  "Bulldog",
+  "Husky",
+  "Border collie",
+  "Bodeguero",
+  "Cocker",
+  "Caniche",
+  "Otro",
+] as const;

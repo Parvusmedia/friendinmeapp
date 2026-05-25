@@ -1,0 +1,23 @@
+[Unit]
+Description=FriendInMe FastAPI (uvicorn)
+After=network.target postgresql.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=cursorbot
+Group=cursorbot
+WorkingDirectory=/opt/apps/friendinme/backend
+# No usar EnvironmentFile= aquí: si falta .env, systemd falla en algunas versiones.
+# La app carga backend/.env sola (pydantic-settings) desde WorkingDirectory.
+#
+# Antes de uvicorn: liberar el 8000 (huérfanos / uvicorn manual) para evitar "address already in use".
+# El prefijo "+" ejecuta este Pre como root; requiere `psmisc` (/usr/bin/fuser), habitual en Ubuntu.
+ExecStartPre=+/bin/sh -c '/usr/bin/fuser -k -9 8000/tcp 2>/dev/null || true'
+ExecStart=/opt/apps/friendinme/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

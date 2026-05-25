@@ -1,0 +1,51 @@
+# FriendInMe — Nginx para friendinme.pmediaplus.com
+# Colocar en: /etc/nginx/sites-available/friendinme
+# Activar: sudo ln -sf /etc/nginx/sites-available/friendinme /etc/nginx/sites-enabled/
+# Probar: sudo nginx -t && sudo systemctl reload nginx
+#
+# Tras certbot, este bloque suele ampliarse con listen 443 ssl y certificados.
+
+upstream friendinme_api {
+    server 127.0.0.1:8000;
+}
+
+upstream friendinme_web {
+    server 127.0.0.1:3010;
+}
+
+server {
+    listen 80;
+    server_name friendinme.pmediaplus.com;
+
+    client_max_body_size 8M;
+
+    location ^~ /api/ {
+        proxy_pass http://friendinme_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ^~ /media/ {
+        proxy_pass http://friendinme_api;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Opción más eficiente: servir disco con alias (ajusta UPLOAD_DIR del backend)
+        # alias /var/lib/friendinme/uploads/;
+    }
+
+    location / {
+        proxy_pass http://friendinme_web/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Sitio recomendado con SSL: deploy/nginx-friendinme.conf

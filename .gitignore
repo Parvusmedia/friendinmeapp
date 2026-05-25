@@ -1,0 +1,30 @@
+# OS / logs
+.DS_Store
+*.log
+
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env*.local
+
+# Python backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/.pytest_cache/
+backend/uploads/
+backend/import_staging/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,103 @@
+# Registro de cambios aplicados — FriendInMe
+
+Documento operativo para soporte, incidencias y despliegues. **Incluido en cada backup** (`deploy/backup_friendinme.sh`).
+
+**Producción:** https://friendinme.pmediaplus.com  
+**Ruta proyecto:** `/opt/apps/friendinme`  
+**Servicios:** `friendinme-api` (puerto 8000), `friendinme-web` (puerto 3010)
+
+---
+
+## Cómo registrar un cambio nuevo
+
+Tras confirmar y aplicar cambios en el servidor:
+
+```bash
+/opt/apps/friendinme/deploy/registrar_cambio.sh \
+  "Título breve del cambio" \
+  "Qué se hizo, archivos o rutas API afectadas. Comandos de despliegue ejecutados."
+```
+
+Luego ejecutar backup (o esperar al cron):
+
+```bash
+PGPASSWORD=... /opt/apps/friendinme/deploy/backup_friendinme.sh
+```
+
+**Despliegue típico frontend + API:**
+
+```bash
+cd /opt/apps/friendinme/frontend && npm run build
+sudo systemctl restart friendinme-api friendinme-web
+```
+
+---
+
+## Historial
+
+<!-- Las entradas nuevas se insertan debajo de esta línea (más reciente primero) -->
+### 2026-05-21 — Registro de cambios y backup ampliado
+
+- **Qué:** Fichero deploy/REGISTRO_CAMBIOS.md, scripts registrar_cambio.sh y backup_friendinme.sh. README y BACKUP.md actualizados.
+- **Despliegue:** (completar si aplica)
+
+
+
+### 2026-05-21 — Registro de cambios y backup ampliado
+
+- **Qué:** Fichero `deploy/REGISTRO_CAMBIOS.md`, script `registrar_cambio.sh` y backup unificado `backup_friendinme.sh` (BD + uploads + este registro).
+- **Despliegue:** Documentación; ejecutar backup manual o vía cron.
+
+### 2026-05-21 — Edición de fichas de perros en panel
+
+- **Qué:** Página `/panel/perros/{id}` — editar datos, subir fotos, portada, eliminar imágenes. Botón **Editar** en listado. API: `PUT /api/dogs/{id}`, `POST /api/dogs/{id}/images`, `POST /api/dogs/{id}/main-image`, `DELETE /api/dogs/{id}/images`.
+- **Permisos:** Refugio (sus perros) y admin (todos).
+- **Despliegue:** `npm run build` + `systemctl restart friendinme-api friendinme-web`.
+
+### 2026-05-21 — Normalización de razas en importación y filtros
+
+- **Qué:** `normalize_breed()` — variantes (galga, mestiza, labrador mestizo…) → razas canónicas. Aplica en import ZIP, alta/edición, filtros y match. Avisos en vista previa del import.
+- **Script opcional BD:** `python -m app.normalize_breeds_db`
+- **API:** `GET /api/dogs/breed-options`
+
+### 2026-05-21 — Cuestionario: email primero y perfil reutilizable
+
+- **Qué:** Flujo `/cuestionario` pide email → si existe, revisar/editar respuestas sin repetir todo → match. Desde ficha perro: `/cuestionario?dog={id}` (match solo ese perro).
+- **API:** `POST /api/adopters/lookup`, `PUT /api/adopters/{id}`, `POST /api/matches` con `dog_id` opcional.
+
+### 2026-05-21 — Importación masiva ZIP (un ZIP de fotos por perro)
+
+- **Qué:** Panel **Importar ZIP** — `perros.csv` + `fotos/{nombre}.zip` por perro. Vista previa, confirmar, job en background.
+- **API:** `GET /api/dogs/import/template`, `POST /api/dogs/import/preview`, `POST /api/dogs/import/{job_id}/confirm`, `GET /api/dogs/import/{job_id}`
+- **Env:** `IMPORT_STAGING_DIR`, `MAX_IMPORT_ZIP_MB`, `MAX_PHOTOS_PER_DOG`
+
+### 2026-05-21 — Filtros, razas, solicitudes de refugio (migración 0002)
+
+- **Qué:** Campos `breed`, `breed_preference`, tabla `shelter_applications`. Filtros públicos provincia/raza. Panel solicitudes refugio. Match con preferencia de raza.
+- **Migración:** `alembic upgrade head` (0002)
+- **Credenciales demo:** `@friendinme.app` (fix EmailStr)
+
+### 2026-05-21 — Home móvil y despliegue inicial MVP
+
+- **Qué:** Landing mobile-first (`page.module.css`), panel admin/refugio, match engine, leads, nginx/systemd en VPS.
+- **BD:** `deploy/setup_postgres.sh`, seed demo.
+
+---
+
+## Referencia rápida (incidencias)
+
+| Síntoma | Comprobar |
+|--------|-----------|
+| Application error en web | ¿`npm run build` + restart `friendinme-web`? Consola F12. |
+| 404 en `/panel/perros/123` | Build antiguo sin ruta dinámica — rebuild + restart. |
+| API 502 / health | `systemctl status friendinme-api`, `curl 127.0.0.1:8000/health` |
+| Fotos no se ven | `UPLOAD_DIR`, nginx `location /media/`, permisos `cursorbot` |
+| Import falla permisos | `chown cursorbot:cursorbot /var/lib/friendinme/import_staging` |
+| Login rechazado | Emails demo `@friendinme.app`, migraciones al día |
+
+**Logs:**
+
+```bash
+journalctl -u friendinme-api -n 80 --no-pager
+journalctl -u friendinme-web -n 80 --no-pager
+```

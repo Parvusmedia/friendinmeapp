@@ -1,0 +1,48 @@
+# Despliegue por SSH al VPS tras push a main.
+# Configura secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY
+# y sudo NOPASSWD para systemctl (ver deploy/GITHUB.md).
+
+name: Deploy FriendInMe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-friendinme
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/apps/friendinme
+            git fetch origin main
+            git reset --hard origin/main
+            cd backend
+            if [ -d .venv ]; then
+              .venv/bin/pip install -q -r requirements.txt
+              .venv/bin/python -m pytest tests -q || { echo "Tests fallidos; abortando deploy." >&2; exit 1; }
+              .venv/bin/alembic upgrade head
+            else
+              echo "ERROR: falta backend/.venv en el servidor. Crearlo una vez (ver deploy/GITHUB.md)." >&2
+              exit 1
+            fi
+            cd ../frontend
+            npm ci
+            npm run build
+            sudo cp /opt/apps/friendinme/deploy/friendinme-api.service /etc/systemd/system/
+            sudo cp /opt/apps/friendinme/deploy/friendinme-web.service /etc/systemd/system/
+            sudo systemctl daemon-reload
+            sudo systemctl restart friendinme-api friendinme-web
+            sudo systemctl is-active friendinme-api friendinme-web
