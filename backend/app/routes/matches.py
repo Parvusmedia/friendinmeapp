@@ -15,6 +15,7 @@ from app.schemas.match import (
     MatchStoredRead,
 )
 from app.services.ai_service import AIService
+from app.services.match_candidates import criteria_from_listing, load_match_candidate_dogs
 from app.services.match_engine import MatchComputation, compute_match
 from app.utils.rate_limit import check_rate_limit
 
@@ -73,21 +74,42 @@ async def run_matches(
     db.query(MatchResult).filter(MatchResult.adopter_profile_id == adopter.id).delete(synchronize_session=False)
     db.commit()
 
-    if payload.dog_id is not None:
-        dog = db.get(Dog, payload.dog_id)
-        if not dog or dog.status != DogStatus.available:
-            raise HTTPException(status_code=404, detail="Perro no disponible para match")
-        dogs = [dog]
-    else:
-        dogs = db.query(Dog).filter(Dog.status == DogStatus.available).all()
+    listing = None
+    if payload.listing_filters:
+        lf = payload.listing_filters
+        listing = criteria_from_listing(
+            size=lf.size,
+            energy_level=lf.energy_level,
+            province=lf.province,
+            breed=lf.breed,
+        )
+
+    dogs, criteria = load_match_candidate_dogs(
+        db,
+        adopter=adopter,
+        dog_id=payload.dog_id,
+        listing=listing,
+    )
+
+    if payload.dog_id is not None and not dogs:
+        raise HTTPException(status_code=404, detail="Perro no disponible para match")
+
+    if not dogs:
+        return MatchRunResponse(
+            adopter_profile_id=adopter.id,
+            results=[],
+            candidates_count=0,
+            filters_applied=criteria.summary_es() if criteria.is_restrictive() else None,
+        )
+
     ai = AIService()
     computations: list[tuple[Dog, MatchComputation]] = [(dog, compute_match(adopter, dog)) for dog in dogs]
     computations.sort(key=lambda x: x[1].compatibility_score, reverse=True)
-    top_ids = {dog.id for dog, _ in computations[: payload.top_n]}
+    top_slice = computations[: payload.top_n]
 
-    for dog, comp in computations:
+    for dog, comp in top_slice:
         explanation = None
-        if payload.use_ai and dog.id in top_ids:
+        if payload.use_ai:
             explanation = await ai.explain_match(dog, comp)
         db.add(
             MatchResult(
@@ -103,7 +125,7 @@ async def run_matches(
     db.commit()
 
     out: list[MatchDogResult] = []
-    for dog, comp in computations[: payload.top_n]:
+    for dog, comp in top_slice:
         mr = (
             db.query(MatchResult)
             .filter(
@@ -113,7 +135,14 @@ async def run_matches(
             .one()
         )
         out.append(_comp_to_result(comp, ai_explanation=mr.ai_explanation))
-    return MatchRunResponse(adopter_profile_id=adopter.id, results=out)
+
+    filters_note = criteria.summary_es() if criteria.is_restrictive() else None
+    return MatchRunResponse(
+        adopter_profile_id=adopter.id,
+        results=out,
+        candidates_count=len(dogs),
+        filters_applied=filters_note,
+    )
 
 
 @router.get("/{adopter_profile_id}", response_model=list[MatchStoredRead])

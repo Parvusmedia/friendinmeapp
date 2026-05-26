@@ -18,6 +18,13 @@ import {
   validateFormStep,
 } from "@/lib/cuestionario-validation";
 import {
+  type ListingMatchFilters,
+  filtersFromSearchParams,
+  hasListingFilters,
+  readListingFilters,
+  saveListingFilters,
+} from "@/lib/match-filters";
+import {
   getQuestionnaireStep,
   QuestionnaireIntro,
   QUESTIONNAIRE_TOTAL_STEPS,
@@ -109,8 +116,10 @@ function CuestionarioInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dogId = searchParams.get("dog");
+  const fromListing = searchParams.get("from") === "listing";
 
-  const [phase, setPhase] = useState<"email" | "review" | "form">("email");
+  const [phase, setPhase] = useState<"presel" | "email" | "review" | "form">("email");
+  const [listingFilters, setListingFilters] = useState<ListingMatchFilters | null>(null);
   const [emailInput, setEmailInput] = useState("");
   const [adopterId, setAdopterId] = useState<number | null>(null);
   const [step, setStep] = useState(0);
@@ -135,8 +144,32 @@ function CuestionarioInner() {
     }
   };
 
+  const applyListingFiltersToForm = (f: ListingMatchFilters) => {
+    setForm((prev) => ({
+      ...prev,
+      preferred_sizes: f.size ? [f.size] : prev.preferred_sizes,
+      preferred_energy: f.energy_level || prev.preferred_energy,
+      province_preference: f.province || prev.province_preference,
+      breed_preferences: f.breed ? [f.breed] : prev.breed_preferences,
+    }));
+  };
+
+  useEffect(() => {
+    const fromUrl = filtersFromSearchParams(searchParams);
+    const stored = readListingFilters();
+    const merged: ListingMatchFilters = { ...stored, ...fromUrl };
+    if (!hasListingFilters(merged)) return;
+    setListingFilters(merged);
+    saveListingFilters(merged);
+    applyListingFiltersToForm(merged);
+    if (!dogId && (fromListing || hasListingFilters(fromUrl))) {
+      setPhase("presel");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar con params de listado
+  }, []);
+
   const goNextStep = () => {
-    const errors = validateFormStep(step, form);
+    const errors = validateFormStep(step, form, { requireMatchFilters: !dogId });
     if (errors.length) {
       showValidationErrors(errors);
       return;
@@ -176,22 +209,42 @@ function CuestionarioInner() {
   };
 
   const runMatch = async (id: number) => {
+    const lf = listingFilters ?? readListingFilters();
     const body: {
       adopter_profile_id: number;
       top_n: number;
       use_ai: boolean;
       dog_id?: number;
+      listing_filters?: ListingMatchFilters;
     } = {
       adopter_profile_id: id,
       top_n: dogId ? 1 : 5,
       use_ai: true,
     };
     if (dogId) body.dog_id = Number(dogId);
+    else if (lf && hasListingFilters(lf)) {
+      body.listing_filters = {
+        size: lf.size,
+        energy_level: lf.energy_level,
+        province: lf.province,
+        breed: lf.breed,
+      };
+    }
 
     const match = (await apiFetch("/api/matches", {
       method: "POST",
       body: JSON.stringify(body),
-    })) as { results: unknown[] };
+    })) as { results: unknown[]; candidates_count?: number; filters_applied?: string | null };
+
+    if (match.filters_applied) {
+      sessionStorage.setItem(
+        "fi_last_match_meta",
+        JSON.stringify({
+          candidates_count: match.candidates_count ?? 0,
+          filters_applied: match.filters_applied,
+        })
+      );
+    }
 
     sessionStorage.setItem("fi_last_match", JSON.stringify(match));
     const email = (form.email || emailInput).trim();
@@ -244,7 +297,7 @@ function CuestionarioInner() {
   };
 
   const saveAndMatch = async () => {
-    const errors = validateAllFormSteps(form);
+    const errors = validateAllFormSteps(form, { requireMatchFilters: !dogId });
     if (errors.length) {
       showValidationErrors(errors);
       const firstInvalid =
@@ -520,6 +573,27 @@ function CuestionarioInner() {
     </>
   );
 
+  const confirmPresel = () => {
+    const errors: string[] = [];
+    if (!dogId && !form.preferred_sizes.length && form.preferred_energy === "no_preference") {
+      errors.push("Marca al menos un tamaño o un nivel de energía para acotar el análisis.");
+    }
+    if (errors.length) {
+      showValidationErrors(errors);
+      return;
+    }
+    showValidationErrors([]);
+    const lf: ListingMatchFilters = {
+      size: form.preferred_sizes[0],
+      energy_level: form.preferred_energy !== "no_preference" ? form.preferred_energy : undefined,
+      province: form.province_preference || undefined,
+      breed: form.breed_preferences[0],
+    };
+    setListingFilters(lf);
+    saveListingFilters(lf);
+    setPhase("email");
+  };
+
   const showIntro = !booting && phase !== "review";
 
   return (
@@ -530,6 +604,10 @@ function CuestionarioInner() {
           <p style={{ color: "var(--muted)" }}>
             Comprobaremos la compatibilidad con el perro que estabas viendo.{" "}
             <Link href={`/perros/${dogId}`}>Volver a la ficha</Link>
+          </p>
+        ) : phase === "presel" ? (
+          <p style={{ color: "var(--muted)" }}>
+            Has filtrado perros en el listado. Confirma tamaño y energía antes del cuestionario completo.
           </p>
         ) : (
           <p style={{ color: "var(--muted)" }}>
@@ -555,6 +633,44 @@ function CuestionarioInner() {
 
         {booting ? (
           <p style={{ color: "var(--muted)", margin: 0 }}>Comprobando si ya tienes perfil guardado…</p>
+        ) : null}
+
+        {!booting && phase === "presel" ? (
+          <>
+            <h2 style={{ marginTop: 0 }}>Confirma qué buscas</h2>
+            <p style={{ color: "var(--muted)", marginTop: 0 }}>
+              Usaremos estos criterios para analizar solo perros que encajan con tu búsqueda (no todo el catálogo).
+              Podrás afinar el resto en el cuestionario.
+            </p>
+            <MultiCheckboxGroup
+              legend="Tamaños"
+              hint="Elige al menos un tamaño o una energía abajo."
+              options={SIZE_OPTIONS}
+              values={form.preferred_sizes}
+              max={3}
+              onChange={(v) => set("preferred_sizes", v)}
+            />
+            <div className="field">
+              <label>Energía</label>
+              <select value={form.preferred_energy} onChange={(e) => set("preferred_energy", e.target.value)}>
+                <option value="no_preference">Sin preferencia</option>
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Provincia (opcional)</label>
+              <input
+                value={form.province_preference}
+                onChange={(e) => set("province_preference", e.target.value)}
+                placeholder="Ej. Madrid"
+              />
+            </div>
+            <button type="button" className="btn btn-primary" onClick={confirmPresel}>
+              Continuar con el cuestionario
+            </button>
+          </>
         ) : null}
 
         {!booting && phase === "email" && currentStep ? (

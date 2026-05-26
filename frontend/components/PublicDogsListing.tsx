@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DogPhotoThumb } from "@/components/DogPhoto";
 import { apiFetch } from "@/lib/api";
+import {
+  buildListingFiltersFromListingState,
+  cuestionarioHref,
+  saveListingFilters,
+} from "@/lib/match-filters";
 
 export type PublicDog = {
   id: number;
@@ -61,6 +66,16 @@ export function PublicDogsListing({ compact = false }: Props) {
     load();
   }, [load]);
 
+  const listingFilters = useMemo(
+    () => buildListingFiltersFromListingState(province, breed, size, energy),
+    [province, breed, size, energy]
+  );
+
+  const matchHref = useMemo(() => {
+    saveListingFilters(listingFilters);
+    return cuestionarioHref(listingFilters);
+  }, [listingFilters]);
+
   return (
     <>
       {!compact ? (
@@ -110,7 +125,7 @@ export function PublicDogsListing({ compact = false }: Props) {
             <option value="high">Alta</option>
           </select>
         </div>
-        <Link href="/cuestionario" className="btn btn-secondary dogs-filters-cta">
+        <Link href={matchHref} className="btn btn-secondary dogs-filters-cta">
           Comprobar compatibilidad
         </Link>
       </div>

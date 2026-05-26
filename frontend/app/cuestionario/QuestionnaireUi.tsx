@@ -2,8 +2,11 @@ import styles from "./cuestionario.module.css";
 
 export const QUESTIONNAIRE_TOTAL_STEPS = 4;
 
-export function getQuestionnaireStep(phase: "email" | "review" | "form", formStep: number): number | null {
-  if (phase === "review") return null;
+export function getQuestionnaireStep(
+  phase: "presel" | "email" | "review" | "form",
+  formStep: number
+): number | null {
+  if (phase === "review" || phase === "presel") return null;
   if (phase === "email") return 1;
   return Math.min(formStep + 2, QUESTIONNAIRE_TOTAL_STEPS);
 }

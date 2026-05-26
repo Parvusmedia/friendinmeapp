@@ -37,6 +37,18 @@ function ResultadosInner() {
   const [shareOk, setShareOk] = useState(false);
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const [emailBusy, setEmailBusy] = useState(false);
+  const [matchMeta, setMatchMeta] = useState<{ candidates_count: number; filters_applied: string } | null>(
+    null
+  );
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("fi_last_match_meta");
+      if (raw) setMatchMeta(JSON.parse(raw) as { candidates_count: number; filters_applied: string });
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (token && !adopterId) {
@@ -214,6 +226,12 @@ function ResultadosInner() {
           : "Hasta 5 perros ordenados por compatibilidad (0–100)."}{" "}
         <strong>No es una garantía</strong>: habla con el refugio y visita al animal.
       </p>
+      {matchMeta?.filters_applied ? (
+        <p style={{ color: "var(--muted)", fontSize: "0.92rem" }}>
+          Analizamos <strong>{matchMeta.candidates_count}</strong> perro
+          {matchMeta.candidates_count === 1 ? "" : "s"} con tus criterios ({matchMeta.filters_applied}).
+        </p>
+      ) : null}
       <div className="notice" style={{ marginBottom: "1rem" }}>
         La puntuación resume encaje según la información disponible.
       </div>

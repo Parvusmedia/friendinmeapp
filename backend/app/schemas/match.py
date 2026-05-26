@@ -6,11 +6,21 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models.enums import MatchLevel
 
 
+class MatchListingFilters(BaseModel):
+    """Filtros del listado público (preselección antes del cuestionario)."""
+
+    size: str | None = None
+    energy_level: str | None = None
+    province: str | None = None
+    breed: str | None = None
+
+
 class MatchRunRequest(BaseModel):
     adopter_profile_id: int
     top_n: int = Field(default=5, ge=1, le=20)
     use_ai: bool = True
     dog_id: int | None = None
+    listing_filters: MatchListingFilters | None = None
 
 
 class MatchBreakdownRead(BaseModel):
@@ -33,6 +43,8 @@ class MatchDogResult(BaseModel):
 class MatchRunResponse(BaseModel):
     adopter_profile_id: int
     results: list[MatchDogResult]
+    candidates_count: int = 0
+    filters_applied: str | None = None
 
 
 class MatchStoredRead(BaseModel):
