@@ -15,7 +15,7 @@ export function CompatRing({ pct, size = "md" }: Props) {
     >
       <span className={styles.inner}>
         <strong>{value}%</strong>
-        {size === "md" ? <small>compat.</small> : null}
+        {size === "md" ? <small>compatibilidad</small> : null}
       </span>
     </div>
   );

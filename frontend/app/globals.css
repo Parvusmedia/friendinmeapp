@@ -140,6 +140,43 @@ h3 {
   box-shadow: 0 8px 28px rgba(30, 41, 59, 0.06);
 }
 
+.dogs-filter-field {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 7.5rem;
+}
+
+.dogs-filter-field--compat {
+  flex: 1 1 9rem;
+}
+
+.dogs-filters-bar--home .dogs-filter-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.dogs-filters-bar--home .dogs-filter-field:nth-child(4) {
+  flex: 1 1 9.5rem;
+}
+
+@media (min-width: 900px) {
+  .dogs-filters-bar--home {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+    gap: 0.65rem 0.75rem;
+    align-items: end;
+  }
+
+  .dogs-filters-bar--home:has(.dogs-filter-field--compat) {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1fr) auto;
+  }
+
+  .dogs-filters-bar--home .dogs-filters-search {
+    grid-column: -1;
+    justify-self: end;
+  }
+}
+
 .dogs-filters-search {
   flex: 0 0 auto;
   align-self: flex-end;

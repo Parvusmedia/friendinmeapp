@@ -45,7 +45,7 @@ export default function PrivacidadPage() {
         <p>FriendInMe no cobra a los adoptantes ni a los refugios por el uso básico de la plataforma.</p>
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} id="modelo-financiacion">
         <h2>3. Modelo de financiación de FriendInMe</h2>
         <p>
           FriendInMe obtiene ingresos principalmente mediante publicidad, patrocinios, acuerdos comerciales y

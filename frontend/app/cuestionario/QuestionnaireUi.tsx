@@ -1,14 +1,21 @@
 import styles from "./cuestionario.module.css";
 
-export const QUESTIONNAIRE_TOTAL_STEPS = 4;
+export const QUESTIONNAIRE_TOTAL_STEPS = 5;
 
 export function getQuestionnaireStep(
-  phase: "presel" | "email" | "review" | "form",
-  formStep: number
+  phase: "email" | "review" | "form",
+  formStep: number,
+  opts?: { skipDogPrefs?: boolean }
 ): number | null {
-  if (phase === "review" || phase === "presel") return null;
+  if (phase === "review") return null;
   if (phase === "email") return 1;
-  return Math.min(formStep + 2, QUESTIONNAIRE_TOTAL_STEPS);
+  const total = opts?.skipDogPrefs ? QUESTIONNAIRE_TOTAL_STEPS - 1 : QUESTIONNAIRE_TOTAL_STEPS;
+  const base = opts?.skipDogPrefs ? 1 : 2;
+  return Math.min(formStep + base, total);
+}
+
+export function getQuestionnaireTotalSteps(opts?: { skipDogPrefs?: boolean }): number {
+  return opts?.skipDogPrefs ? QUESTIONNAIRE_TOTAL_STEPS - 1 : QUESTIONNAIRE_TOTAL_STEPS;
 }
 
 export function QuestionnaireIntro() {
@@ -17,8 +24,8 @@ export function QuestionnaireIntro() {
       <p className={styles.introTitle}>¿Para qué son estas preguntas?</p>
       <div className={styles.introGrid}>
         <p>
-          Queremos conocer tu hogar, tu día a día y qué buscas en un perro. Con eso, FriendInMe puede orientarte hacia
-          animales que encajen contigo y con los refugios que colaboran en la plataforma.
+          Empezamos por el tipo de perro que te encaja (tamaño, energía, edad…). Después preguntamos por tu hogar y tu
+          día a día. Con eso, FriendInMe orienta el match hacia animales reales de refugios colaboradores.
         </p>
         <p>
           Utilizamos <strong>inteligencia artificial</strong>, junto con los datos que cada refugio registra sobre sus
@@ -53,9 +60,10 @@ export function StepProgress({ current, total }: { current: number; total: numbe
 
 const STEP_HINTS: Record<number, string> = {
   1: "Identificación — usamos tu email para recuperar tu perfil si ya lo completaste.",
-  2: "Datos personales y contacto.",
-  3: "Tu hogar, convivencia y rutina diaria.",
-  4: "Preferencias sobre el perro y consentimientos.",
+  2: "Qué tipo de perro buscas: tamaño, energía, raza orientativa y edad.",
+  3: "Datos personales y contacto.",
+  4: "Tu hogar, convivencia y rutina diaria.",
+  5: "Motivo de adopción y consentimientos.",
 };
 
 export function StepHint({ step }: { step: number }) {

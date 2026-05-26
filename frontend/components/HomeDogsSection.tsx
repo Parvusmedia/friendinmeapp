@@ -23,7 +23,7 @@ export function HomeDogsSection({ moduleStyles = defaultStyles, variant = "defau
           </h2>
           {isHome ? (
             <p className={styles.dogsLead}>
-              Filtra por lo básico. El porcentaje de compatibilidad aparece tras completar el cuestionario.
+              Filtra por provincia, tamaño, energía, edad y raza. El % de compatibilidad aparece tras el cuestionario.
             </p>
           ) : compact ? (
             <p className={styles.dogsLeadCompact}>

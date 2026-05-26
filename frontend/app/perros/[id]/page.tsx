@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DogPhotoGallery } from "@/components/DogPhotoGallery";
-import { MatchBadge } from "@/components/MatchBadge";
-import { PerroContactLinks } from "@/components/PerroContactLinks";
+import { PerroDetalleView, type DogDetail, type SimilarDog } from "./PerroDetalleView";
 import styles from "./perro-detalle.module.css";
 
 const API_BASE = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -44,59 +42,73 @@ function buildGallery(dog: Record<string, unknown>): string[] {
   return out;
 }
 
+function toDogDetail(raw: Record<string, unknown>): DogDetail {
+  return {
+    id: Number(raw.id),
+    name: String(raw.name),
+    breed: String(raw.breed || ""),
+    age_estimate: String(raw.age_estimate || ""),
+    size: String(raw.size),
+    energy_level: String(raw.energy_level),
+    province: String(raw.province),
+    city: String(raw.city),
+    story: String(raw.story || ""),
+    behaviour_notes: String(raw.behaviour_notes || ""),
+    ideal_home: String(raw.ideal_home || ""),
+    medical_needs: String(raw.medical_needs || ""),
+    ai_generated_summary: raw.ai_generated_summary ? String(raw.ai_generated_summary) : null,
+    status: String(raw.status || "available"),
+    main_image_url: raw.main_image_url ? String(raw.main_image_url) : null,
+    images: Array.isArray(raw.images) ? (raw.images as string[]) : [],
+    shelter_name: String(raw.shelter_name || ""),
+    shelter_whatsapp: String(raw.shelter_whatsapp || ""),
+    can_live_in_apartment: raw.can_live_in_apartment ? String(raw.can_live_in_apartment) : undefined,
+  };
+}
+
+function toSimilarDog(raw: Record<string, unknown>): SimilarDog {
+  return {
+    id: Number(raw.id),
+    name: String(raw.name),
+    breed: String(raw.breed || ""),
+    age_estimate: String(raw.age_estimate || ""),
+    city: String(raw.city),
+    province: String(raw.province),
+    size: String(raw.size),
+    energy_level: String(raw.energy_level),
+    main_image_url: raw.main_image_url ? String(raw.main_image_url) : null,
+  };
+}
+
+async function loadSimilar(currentId: number, size: string): Promise<SimilarDog[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/dogs`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const all = (await res.json()) as Record<string, unknown>[];
+    return all
+      .filter((d) => Number(d.id) !== currentId && String(d.size) === size)
+      .slice(0, 3)
+      .map(toSimilarDog);
+  } catch {
+    return [];
+  }
+}
+
 export default async function PerroDetallePage({ params }: PageProps) {
   const { id } = await params;
   const res = await fetch(`${API_BASE}/api/dogs/${id}`, { cache: "no-store" });
   if (!res.ok) {
     return (
-      <div className="container" style={{ padding: "2rem" }}>
+      <div className={styles.shell} style={{ padding: "2rem 1rem" }}>
         <p>Perro no encontrado</p>
-        <Link href="/perros">Volver</Link>
+        <Link href="/perros">Volver a perros</Link>
       </div>
     );
   }
-  const dog = (await res.json()) as Record<string, unknown>;
-  const name = String(dog.name);
-  const gallery = buildGallery(dog);
+  const raw = (await res.json()) as Record<string, unknown>;
+  const dog = toDogDetail(raw);
+  const gallery = buildGallery(raw);
+  const similar = await loadSimilar(dog.id, dog.size);
 
-  return (
-    <div className={`container ${styles.page}`}>
-      <Link href="/perros" style={{ color: "var(--muted)" }}>
-        ← Perros
-      </Link>
-      <div className={`card ${styles.detailCard}`}>
-        <div className={styles.detailGallery}>
-          <DogPhotoGallery urls={gallery} name={name} layout="side" />
-        </div>
-        <div className={styles.detailBody}>
-          <h1 style={{ marginTop: 0 }}>{name}</h1>
-          <MatchBadge dogId={Number(id)} />
-          <p style={{ color: "var(--muted)" }}>
-            {String(dog.city)}, {String(dog.province)} · Edad aprox.: {String(dog.age_estimate)} · Tamaño:{" "}
-            {String(dog.size)} · Energía: {String(dog.energy_level)}
-          </p>
-          <h3>Historia</h3>
-          <p>{String(dog.story || "—")}</p>
-          <h3>Carácter y comportamiento</h3>
-          <p>{String(dog.behaviour_notes || "—")}</p>
-          <h3>Hogar ideal</h3>
-          <p>{String(dog.ideal_home || "—")}</p>
-          <h3>Necesidades especiales</h3>
-          <p>{String(dog.medical_needs || "—")}</p>
-          {dog.ai_generated_summary ? (
-            <>
-              <h3>Resumen</h3>
-              <p>{String(dog.ai_generated_summary)}</p>
-            </>
-          ) : null}
-          <PerroContactLinks
-            dogId={id}
-            dogName={name}
-            shelterWhatsapp={String(dog.shelter_whatsapp || "")}
-            shelterName={String(dog.shelter_name || "")}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  return <PerroDetalleView dog={dog} gallery={gallery} similar={similar} />;
 }

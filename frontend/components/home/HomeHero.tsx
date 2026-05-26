@@ -80,17 +80,20 @@ export function HomeHero() {
           </ul>
         </div>
 
+        <div className={styles.heroVisual}>
         {featured ? (
           <article className={styles.featuredCard}>
-            <span className={styles.featuredBadge}>
-              <span aria-hidden>★</span> Recomendado para ti
-            </span>
-            <DogPhotoThumb
-              src={featured.main_image_url}
-              alt={`Foto de ${featured.name}`}
-              href={`/perros/${featured.id}`}
-              height={220}
-            />
+            <div className={styles.featuredMedia}>
+              <span className={styles.featuredBadge}>
+                <span aria-hidden>★</span> Recomendado para ti
+              </span>
+              <DogPhotoThumb
+                src={featured.main_image_url}
+                alt={`Foto de ${featured.name}`}
+                href={`/perros/${featured.id}`}
+                height={340}
+              />
+            </div>
             <div className={styles.featuredBody}>
               <div className={styles.featuredHead}>
                 <div>
@@ -125,6 +128,7 @@ export function HomeHero() {
         ) : (
           <div className={styles.featuredPlaceholder} aria-hidden />
         )}
+        </div>
       </div>
     </section>
   );

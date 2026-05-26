@@ -19,6 +19,7 @@ export type AdopterProfile = {
   hours_away_from_home: string;
   activity_level: string;
   preferred_sizes: string[];
+  preferred_age_ranges: string[];
   preferred_energy: string;
   adoption_reason: string;
   important_notes: string;

@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 from app.constants.breeds import normalize_breed
 from app.models.adopter import AdopterProfile
 from app.models.dog import Dog
-from app.models.enums import DogSize, DogStatus, EnergyLevel, EnergyPreference
+from app.models.enums import DogStatus, EnergyPreference
 from app.utils.adopter_preferences import parse_breeds, parse_sizes
+from app.utils.age_preferences import AGE_LABELS_ES, dog_matches_age_preference, parse_age_ranges
 
 
 @dataclass(frozen=True)
@@ -19,9 +20,10 @@ class MatchFilterCriteria:
     energy_level: str | None = None
     province: str | None = None
     breeds: tuple[str, ...] = ()
+    age_ranges: tuple[str, ...] = ()
 
     def is_restrictive(self) -> bool:
-        return bool(self.sizes or self.energy_level or self.province or self.breeds)
+        return bool(self.sizes or self.energy_level or self.province or self.breeds or self.age_ranges)
 
     def summary_es(self) -> str:
         parts: list[str] = []
@@ -35,6 +37,8 @@ class MatchFilterCriteria:
             parts.append(f"provincia {self.province}")
         if self.breeds:
             parts.append("raza " + ", ".join(self.breeds))
+        if self.age_ranges:
+            parts.append("edad " + ", ".join(AGE_LABELS_ES.get(a, a) for a in self.age_ranges))
         return "; ".join(parts) if parts else "sin filtros de preferencia"
 
 
@@ -45,7 +49,8 @@ def criteria_from_adopter(adopter: AdopterProfile) -> MatchFilterCriteria:
         energy = adopter.preferred_energy.value
     province = (adopter.province_preference or "").strip() or None
     breeds = tuple(parse_breeds(adopter.breed_preference))
-    return MatchFilterCriteria(sizes=sizes, energy_level=energy, province=province, breeds=breeds)
+    ages = tuple(parse_age_ranges(getattr(adopter, "preferred_age", None)))
+    return MatchFilterCriteria(sizes=sizes, energy_level=energy, province=province, breeds=breeds, age_ranges=ages)
 
 
 def merge_criteria(base: MatchFilterCriteria, extra: MatchFilterCriteria | None) -> MatchFilterCriteria:
@@ -55,7 +60,10 @@ def merge_criteria(base: MatchFilterCriteria, extra: MatchFilterCriteria | None)
     energy = extra.energy_level or base.energy_level
     province = extra.province or base.province
     breeds = extra.breeds if extra.breeds else base.breeds
-    return MatchFilterCriteria(sizes=sizes, energy_level=energy, province=province, breeds=breeds)
+    ages = extra.age_ranges if extra.age_ranges else base.age_ranges
+    return MatchFilterCriteria(
+        sizes=sizes, energy_level=energy, province=province, breeds=breeds, age_ranges=ages
+    )
 
 
 def criteria_from_listing(
@@ -112,6 +120,8 @@ def filter_dogs_by_criteria(dogs: list[Dog], criteria: MatchFilterCriteria) -> l
         if criteria.province and dog.province.strip().lower() != criteria.province.lower():
             continue
         if not _dog_matches_breed(dog, criteria.breeds):
+            continue
+        if criteria.age_ranges and not dog_matches_age_preference(dog.age_estimate, list(criteria.age_ranges)):
             continue
         out.append(dog)
     return out

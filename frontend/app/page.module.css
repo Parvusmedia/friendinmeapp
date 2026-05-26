@@ -4,6 +4,7 @@
   width: 100%;
   overflow-x: clip;
   --home-shell: 1180px;
+  --home-hero-max: 1000px;
   --home-gutter: max(1rem, env(safe-area-inset-left));
   --home-gutter-r: max(1rem, env(safe-area-inset-right));
   --green: #2d6b5c;
@@ -14,23 +15,32 @@
 
 /* —— Hero —— */
 .hero {
-  padding: 1.5rem var(--home-gutter-r) 2rem var(--home-gutter);
+  padding: 1.75rem var(--home-gutter-r) 2.25rem var(--home-gutter);
   background: linear-gradient(165deg, #ebe6de 0%, #faf8f5 45%, #fff 100%);
 }
 
 .heroGrid {
-  max-width: var(--home-shell);
+  width: 100%;
+  max-width: var(--home-hero-max);
   margin-inline: auto;
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.75rem;
   align-items: center;
+  justify-content: center;
 }
 
 .heroCopy {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-width: 36rem;
+}
+
+.heroVisual {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .badge {
@@ -128,41 +138,57 @@
   font-weight: 700;
 }
 
-/* Featured card */
-.featuredCard,
-.featuredPlaceholder {
-  background: #fff;
-  border-radius: 20px;
-  border: 1px solid #e8e4df;
-  box-shadow: 0 16px 48px rgba(30, 41, 59, 0.1);
-  overflow: hidden;
+/* Featured card — foto grande + panel blanco superpuesto (mockup) */
+.featuredCard {
   position: relative;
+  border-radius: 24px;
+  filter: drop-shadow(0 20px 44px rgba(30, 41, 59, 0.14));
 }
 
 .featuredPlaceholder {
-  min-height: 320px;
+  min-height: 360px;
+  border-radius: 24px;
   background: #f0ebe3;
+}
+
+.featuredMedia {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #e8f0ee 0%, #ebe4d8 100%);
+}
+
+.featuredMedia a {
+  display: block;
 }
 
 .featuredBadge {
   position: absolute;
   top: 0.85rem;
   left: 0.85rem;
-  z-index: 2;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.35rem 0.7rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
   background: var(--coral);
   color: #5c3d1e;
   box-shadow: 0 4px 12px rgba(232, 168, 124, 0.45);
+  pointer-events: none;
 }
 
 .featuredBody {
-  padding: 1rem 1.1rem 1.15rem;
+  position: relative;
+  z-index: 2;
+  margin: -3.75rem 0.65rem 0;
+  padding: 1rem 1.1rem 1.1rem;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e8e4df;
+  box-shadow: 0 10px 36px rgba(30, 41, 59, 0.1);
 }
 
 .featuredHead {
@@ -205,45 +231,58 @@
   margin-bottom: 0.85rem;
 }
 
-.tag {
+.featuredBody .tag {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.65rem;
   border-radius: 999px;
-  background: #f0ebe3;
-  color: #4b5565;
+  background: rgba(45, 107, 92, 0.1);
+  color: var(--green-dark);
 }
 
 .featuredActions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .featuredLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid #d4cfc6;
+  background: #fff;
   font-weight: 600;
-  color: #64748b;
+  color: #334155;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  box-sizing: border-box;
 }
 
 .featuredLink:hover {
-  color: var(--green);
+  border-color: var(--green);
+  color: var(--green-dark);
 }
 
 .featuredMatchBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.55rem 1rem;
+  min-height: 2.65rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 999px;
   background: var(--green);
   color: #fff;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   text-decoration: none;
+  box-shadow: 0 6px 16px rgba(45, 107, 92, 0.28);
+  box-sizing: border-box;
 }
 
 /* —— Cómo funciona —— */
@@ -382,6 +421,22 @@
 
 .shelterCtaTitle {
   margin: 0 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.shelterCtaFree {
+  display: block;
+  font-size: clamp(2.25rem, 6vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--green);
+}
+
+.shelterCtaTitleText {
+  display: block;
   font-size: 1.45rem;
   font-weight: 800;
   color: #172033;
@@ -407,6 +462,25 @@
   box-shadow: 0 6px 18px rgba(45, 107, 92, 0.25);
 }
 
+.shelterCtaLegal {
+  margin: 1rem 0 0;
+  max-width: 32rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.shelterCtaLegal a {
+  color: var(--green-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.shelterCtaLegal a:hover {
+  color: var(--green);
+}
+
 .shelterCtaVisual {
   display: none;
   font-size: 5rem;
@@ -415,14 +489,29 @@
 }
 
 @media (min-width: 768px) {
-  .heroGrid {
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.7fr);
-    gap: 2rem;
+  .hero {
+    padding: 2.25rem var(--home-gutter-r) 2.75rem var(--home-gutter);
   }
 
-  .featuredCard {
-    max-width: 340px;
-    margin-inline: auto;
+  .heroGrid {
+    max-width: var(--home-hero-max);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    gap: 1.5rem;
+  }
+
+  .heroCopy {
+    max-width: 34rem;
+  }
+
+  .heroVisual {
+    justify-content: flex-start;
+  }
+
+  .featuredCard,
+  .featuredPlaceholder {
+    width: 100%;
+    max-width: 360px;
+    margin-inline: 0;
   }
 
   .actions {
@@ -476,13 +565,28 @@
 }
 
 @media (min-width: 1024px) {
-  .heroGrid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.65fr);
-    gap: 2.5rem;
+  .hero {
+    padding: 2.75rem var(--home-gutter-r) 3.25rem var(--home-gutter);
   }
 
-  .featuredCard {
-    max-width: 320px;
+  .heroGrid {
+    max-width: var(--home-hero-max);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    gap: 2rem;
+  }
+
+  .featuredCard,
+  .featuredPlaceholder {
+    max-width: 380px;
+  }
+
+  .featuredBody {
+    margin-top: -4.25rem;
+    margin-inline: 0.75rem;
+  }
+
+  .title {
+    font-size: clamp(2rem, 3.2vw, 2.85rem);
   }
 
   .dogsHeader {

@@ -12,6 +12,7 @@ import {
 } from "@/lib/adopter-session";
 import { MultiCheckboxGroup } from "@/components/MultiCheckboxGroup";
 import { BREED_OPTIONS } from "@/lib/breeds";
+import { AGE_FILTER_OPTIONS, AGE_LABELS_SHORT } from "@/lib/dog-filters";
 import {
   validateAllFormSteps,
   validateEmail,
@@ -26,8 +27,8 @@ import {
 } from "@/lib/match-filters";
 import {
   getQuestionnaireStep,
+  getQuestionnaireTotalSteps,
   QuestionnaireIntro,
-  QUESTIONNAIRE_TOTAL_STEPS,
   StepHint,
   StepProgress,
 } from "./QuestionnaireUi";
@@ -48,6 +49,7 @@ const EMPTY_FORM = {
   hours_away_from_home: "0-2",
   activity_level: "medium",
   preferred_sizes: [] as string[],
+  preferred_age_ranges: [] as string[],
   preferred_energy: "no_preference",
   adoption_reason: "",
   important_notes: "",
@@ -101,6 +103,7 @@ function profileToForm(p: AdopterProfile) {
     hours_away_from_home: p.hours_away_from_home,
     activity_level: p.activity_level,
     preferred_sizes: p.preferred_sizes ?? [],
+    preferred_age_ranges: p.preferred_age_ranges ?? [],
     preferred_energy: p.preferred_energy,
     adoption_reason: p.adoption_reason,
     important_notes: p.important_notes,
@@ -116,9 +119,9 @@ function CuestionarioInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dogId = searchParams.get("dog");
-  const fromListing = searchParams.get("from") === "listing";
+  const skipDogPrefs = Boolean(dogId);
 
-  const [phase, setPhase] = useState<"presel" | "email" | "review" | "form">("email");
+  const [phase, setPhase] = useState<"email" | "review" | "form">("email");
   const [listingFilters, setListingFilters] = useState<ListingMatchFilters | null>(null);
   const [emailInput, setEmailInput] = useState("");
   const [adopterId, setAdopterId] = useState<number | null>(null);
@@ -151,6 +154,7 @@ function CuestionarioInner() {
       preferred_energy: f.energy_level || prev.preferred_energy,
       province_preference: f.province || prev.province_preference,
       breed_preferences: f.breed ? [f.breed] : prev.breed_preferences,
+      preferred_age_ranges: f.age ? [f.age] : prev.preferred_age_ranges,
     }));
   };
 
@@ -162,14 +166,11 @@ function CuestionarioInner() {
     setListingFilters(merged);
     saveListingFilters(merged);
     applyListingFiltersToForm(merged);
-    if (!dogId && (fromListing || hasListingFilters(fromUrl))) {
-      setPhase("presel");
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar con params de listado
   }, []);
 
   const goNextStep = () => {
-    const errors = validateFormStep(step, form, { requireMatchFilters: !dogId });
+    const errors = validateFormStep(step, form, { requireMatchFilters: !dogId, skipDogPrefs });
     if (errors.length) {
       showValidationErrors(errors);
       return;
@@ -287,7 +288,7 @@ function CuestionarioInner() {
         setAdopterId(null);
         setForm({ ...EMPTY_FORM, email });
         setPhase("form");
-        setStep(0);
+        setStep(dogId ? 1 : 0);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error al buscar el email");
@@ -297,15 +298,17 @@ function CuestionarioInner() {
   };
 
   const saveAndMatch = async () => {
-    const errors = validateAllFormSteps(form, { requireMatchFilters: !dogId });
+    const errors = validateAllFormSteps(form, { requireMatchFilters: !dogId, skipDogPrefs });
     if (errors.length) {
       showValidationErrors(errors);
       const firstInvalid =
-        !form.name.trim() || !form.phone.trim() || !form.province.trim() || !form.city.trim()
+        !skipDogPrefs && form.preferred_sizes.length === 0 && form.preferred_energy === "no_preference"
           ? 0
-          : !form.consent_contact
-            ? 2
-            : step;
+          : !form.name.trim() || !form.phone.trim() || !form.province.trim() || !form.city.trim()
+            ? 1
+            : !form.consent_contact
+              ? 3
+              : step;
       setStep(firstInvalid);
       return;
     }
@@ -358,7 +361,58 @@ function CuestionarioInner() {
     }
   };
 
+  const dogPreferencesStep = (
+    <>
+      <h2 style={{ marginTop: 0 }}>¿Qué tipo de perro buscas?</h2>
+      <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: "1rem" }}>
+        Esto acota el análisis de compatibilidad a perros que encajan contigo. Puedes elegir varias opciones.
+      </p>
+      <MultiCheckboxGroup
+        legend="Tamaño"
+        hint="Elige uno o más. Obligatorio tamaño o energía (abajo)."
+        options={SIZE_OPTIONS}
+        values={form.preferred_sizes}
+        max={3}
+        onChange={(v) => set("preferred_sizes", v)}
+      />
+      <div className="field">
+        <label>Energía</label>
+        <select value={form.preferred_energy} onChange={(e) => set("preferred_energy", e.target.value)}>
+          <option value="no_preference">Sin preferencia</option>
+          <option value="low">Baja</option>
+          <option value="medium">Media</option>
+          <option value="high">Alta</option>
+        </select>
+      </div>
+      <MultiCheckboxGroup
+        legend="Rango de edad"
+        hint="Si no marcas ninguno, no filtramos por edad (indiferente)."
+        options={AGE_FILTER_OPTIONS}
+        values={form.preferred_age_ranges}
+        max={4}
+        onChange={(v) => set("preferred_age_ranges", v)}
+      />
+      <MultiCheckboxGroup
+        legend="Raza (orientativa)"
+        hint="Hasta 3 razas. Si no marcas ninguna, no filtramos por raza."
+        options={BREED_OPTIONS.map((b) => ({ value: b, label: b }))}
+        values={form.breed_preferences}
+        max={3}
+        onChange={(v) => set("breed_preferences", v)}
+      />
+      <div className="field">
+        <label>Provincia preferida para adoptar (opcional)</label>
+        <input
+          value={form.province_preference}
+          onChange={(e) => set("province_preference", e.target.value)}
+          placeholder="Ej. Madrid"
+        />
+      </div>
+    </>
+  );
+
   const formSteps = [
+    dogPreferencesStep,
     <>
       <h2 style={{ marginTop: 0 }}>Sobre ti</h2>
       <div className="field">
@@ -445,36 +499,7 @@ function CuestionarioInner() {
       </div>
     </>,
     <>
-      <h2 style={{ marginTop: 0 }}>Preferencias y motivación</h2>
-      <MultiCheckboxGroup
-        legend="Tamaños preferidos"
-        hint="Puedes elegir varios (por ejemplo mediano y grande). Si no marcas ninguno, no filtramos por tamaño."
-        options={SIZE_OPTIONS}
-        values={form.preferred_sizes}
-        max={3}
-        onChange={(v) => set("preferred_sizes", v)}
-      />
-      <div className="field">
-        <label>Energía preferida</label>
-        <select value={form.preferred_energy} onChange={(e) => set("preferred_energy", e.target.value)}>
-          <option value="no_preference">Sin preferencia</option>
-          <option value="low">Baja</option>
-          <option value="medium">Media</option>
-          <option value="high">Alta</option>
-        </select>
-      </div>
-      <div className="field">
-        <label>Provincia preferida para adoptar</label>
-        <input value={form.province_preference} onChange={(e) => set("province_preference", e.target.value)} />
-      </div>
-      <MultiCheckboxGroup
-        legend="Razas preferidas (orientativas)"
-        hint="Hasta 3 razas. Si no marcas ninguna, no filtramos por raza."
-        options={BREED_OPTIONS.map((b) => ({ value: b, label: b }))}
-        values={form.breed_preferences}
-        max={3}
-        onChange={(v) => set("breed_preferences", v)}
-      />
+      <h2 style={{ marginTop: 0 }}>Motivación y consentimientos</h2>
       <div className="field">
         <label>Distancia máx. (km, opcional)</label>
         <input type="number" value={form.max_distance_km} onChange={(e) => set("max_distance_km", e.target.value)} min={0} />
@@ -502,7 +527,9 @@ function CuestionarioInner() {
     </>,
   ];
 
-  const currentStep = getQuestionnaireStep(phase, step);
+  const progressOpts = { skipDogPrefs };
+  const currentStep = getQuestionnaireStep(phase, step, progressOpts);
+  const totalSteps = getQuestionnaireTotalSteps(progressOpts);
 
   const reviewBlock = (
     <>
@@ -520,12 +547,15 @@ function CuestionarioInner() {
           perro: {form.has_other_dogs ? "Sí" : "No"} · Gatos: {form.has_cats ? "Sí" : "No"}
         </li>
         <li>
-          Tamaños preferidos:{" "}
+          Perro:{" "}
           {form.preferred_sizes.length
             ? form.preferred_sizes.map((s) => SIZE_LABELS[s] || s).join(", ")
-            : "Sin preferencia"}
+            : "cualquier tamaño"}
           {" · "}
-          Energía: {ENERGY_LABELS[form.preferred_energy] || form.preferred_energy}
+          energía {ENERGY_LABELS[form.preferred_energy] || form.preferred_energy}
+          {form.preferred_age_ranges.length
+            ? ` · edad ${form.preferred_age_ranges.map((a) => AGE_LABELS_SHORT[a] || a).join(", ")}`
+            : " · edad indiferente"}
         </li>
         {form.breed_preferences.length ? (
           <li>Razas preferidas: {form.breed_preferences.join(", ")}</li>
@@ -550,7 +580,7 @@ function CuestionarioInner() {
           disabled={loading}
           onClick={() => {
             setPhase("form");
-            setStep(0);
+            setStep(skipDogPrefs ? 1 : 0);
           }}
         >
           Editar respuestas
@@ -573,27 +603,6 @@ function CuestionarioInner() {
     </>
   );
 
-  const confirmPresel = () => {
-    const errors: string[] = [];
-    if (!dogId && !form.preferred_sizes.length && form.preferred_energy === "no_preference") {
-      errors.push("Marca al menos un tamaño o un nivel de energía para acotar el análisis.");
-    }
-    if (errors.length) {
-      showValidationErrors(errors);
-      return;
-    }
-    showValidationErrors([]);
-    const lf: ListingMatchFilters = {
-      size: form.preferred_sizes[0],
-      energy_level: form.preferred_energy !== "no_preference" ? form.preferred_energy : undefined,
-      province: form.province_preference || undefined,
-      breed: form.breed_preferences[0],
-    };
-    setListingFilters(lf);
-    saveListingFilters(lf);
-    setPhase("email");
-  };
-
   const showIntro = !booting && phase !== "review";
 
   return (
@@ -605,13 +614,9 @@ function CuestionarioInner() {
             Comprobaremos la compatibilidad con el perro que estabas viendo.{" "}
             <Link href={`/perros/${dogId}`}>Volver a la ficha</Link>
           </p>
-        ) : phase === "presel" ? (
-          <p style={{ color: "var(--muted)" }}>
-            Has filtrado perros en el listado. Confirma tamaño y energía antes del cuestionario completo.
-          </p>
         ) : (
           <p style={{ color: "var(--muted)" }}>
-            Primero identifícate con tu email. Si ya completaste el cuestionario, no tendrás que repetirlo.
+            Primero tu email; después empezamos por el tipo de perro que buscas. Si ya tienes perfil, lo recuperamos.
           </p>
         )}
       </div>
@@ -635,47 +640,9 @@ function CuestionarioInner() {
           <p style={{ color: "var(--muted)", margin: 0 }}>Comprobando si ya tienes perfil guardado…</p>
         ) : null}
 
-        {!booting && phase === "presel" ? (
-          <>
-            <h2 style={{ marginTop: 0 }}>Confirma qué buscas</h2>
-            <p style={{ color: "var(--muted)", marginTop: 0 }}>
-              Usaremos estos criterios para analizar solo perros que encajan con tu búsqueda (no todo el catálogo).
-              Podrás afinar el resto en el cuestionario.
-            </p>
-            <MultiCheckboxGroup
-              legend="Tamaños"
-              hint="Elige al menos un tamaño o una energía abajo."
-              options={SIZE_OPTIONS}
-              values={form.preferred_sizes}
-              max={3}
-              onChange={(v) => set("preferred_sizes", v)}
-            />
-            <div className="field">
-              <label>Energía</label>
-              <select value={form.preferred_energy} onChange={(e) => set("preferred_energy", e.target.value)}>
-                <option value="no_preference">Sin preferencia</option>
-                <option value="low">Baja</option>
-                <option value="medium">Media</option>
-                <option value="high">Alta</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Provincia (opcional)</label>
-              <input
-                value={form.province_preference}
-                onChange={(e) => set("province_preference", e.target.value)}
-                placeholder="Ej. Madrid"
-              />
-            </div>
-            <button type="button" className="btn btn-primary" onClick={confirmPresel}>
-              Continuar con el cuestionario
-            </button>
-          </>
-        ) : null}
-
         {!booting && phase === "email" && currentStep ? (
           <>
-            <StepProgress current={currentStep} total={QUESTIONNAIRE_TOTAL_STEPS} />
+            <StepProgress current={currentStep} total={totalSteps} />
             <StepHint step={currentStep} />
             <h2 style={{ marginTop: 0 }}>Tu email</h2>
             <div className="field">
@@ -702,7 +669,7 @@ function CuestionarioInner() {
 
         {!booting && phase === "form" && currentStep ? (
           <>
-            <StepProgress current={currentStep} total={QUESTIONNAIRE_TOTAL_STEPS} />
+            <StepProgress current={currentStep} total={totalSteps} />
             <StepHint step={currentStep} />
             {adopterId ? (
               <p style={{ color: "var(--muted)", fontSize: "0.88rem", margin: "0 0 0.75rem" }}>Estás editando tu perfil guardado.</p>
@@ -712,7 +679,7 @@ function CuestionarioInner() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                disabled={step === 0}
+                disabled={skipDogPrefs ? step <= 1 : step === 0}
                 onClick={() => {
                   showValidationErrors([]);
                   setStep((s) => s - 1);

@@ -44,6 +44,12 @@
   border-radius: 999px;
   background: #f0ebe3;
   color: #4b5565;
+  line-height: 1.3;
+}
+
+.tagAge {
+  background: rgba(45, 107, 92, 0.1);
+  color: #1f4f44;
 }
 
 .actions {

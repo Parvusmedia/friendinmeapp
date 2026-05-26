@@ -12,6 +12,7 @@ from app.models.enums import (
     HoursAway,
 )
 from app.utils.adopter_preferences import MAX_BREEDS, MAX_SIZES, SIZE_VALUES, encode_breeds, encode_sizes, parse_breeds, parse_sizes
+from app.utils.age_preferences import AGE_VALUES, MAX_AGE_RANGES, encode_age_ranges, parse_age_ranges
 
 
 def _normalize_size_list(v: list[str]) -> list[str]:
@@ -53,6 +54,7 @@ class AdopterProfileCreate(BaseModel):
     hours_away_from_home: HoursAway
     activity_level: EnergyLevel
     preferred_sizes: list[str] = Field(default_factory=list)
+    preferred_age_ranges: list[str] = Field(default_factory=list)
     preferred_energy: EnergyPreference
     adoption_reason: str = ""
     important_notes: str = ""
@@ -66,6 +68,18 @@ class AdopterProfileCreate(BaseModel):
     @classmethod
     def validate_sizes(cls, v: list[str]) -> list[str]:
         return _normalize_size_list(v)
+
+    @field_validator("preferred_age_ranges")
+    @classmethod
+    def validate_age_ranges(cls, v: list[str]) -> list[str]:
+        out: list[str] = []
+        for r in v:
+            p = (r or "").strip().lower()
+            if p in AGE_VALUES and p not in out:
+                out.append(p)
+        if len(out) > MAX_AGE_RANGES:
+            raise ValueError(f"Máximo {MAX_AGE_RANGES} rangos de edad")
+        return out
 
     @field_validator("breed_preferences")
     @classmethod
@@ -106,6 +120,7 @@ class AdopterProfileRead(AdopterProfileCreate):
                 "hours_away_from_home": data.hours_away_from_home,
                 "activity_level": data.activity_level,
                 "preferred_sizes": parse_sizes(data.preferred_size),
+                "preferred_age_ranges": parse_age_ranges(getattr(data, "preferred_age", None)),
                 "preferred_energy": data.preferred_energy,
                 "adoption_reason": data.adoption_reason or "",
                 "important_notes": data.important_notes or "",
@@ -121,8 +136,10 @@ class AdopterProfileRead(AdopterProfileCreate):
 def adopter_create_to_row_fields(payload: AdopterProfileCreate) -> dict[str, Any]:
     data = payload.model_dump()
     sizes = data.pop("preferred_sizes", [])
+    ages = data.pop("preferred_age_ranges", [])
     breeds = data.pop("breed_preferences", [])
     data["preferred_size"] = encode_sizes(sizes)
+    data["preferred_age"] = encode_age_ranges(ages)
     data["breed_preference"] = encode_breeds(breeds)
     return data
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +12,18 @@ import {
   resolveStoredAdopter,
   runMatchForDog,
 } from "@/lib/adopter-session";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { whatsappUrl } from "@/lib/whatsapp";
+import styles from "./contacto.module.css";
+
+type DogSummary = {
+  name: string;
+  city: string;
+  province: string;
+  breed: string;
+  main_image_url: string | null;
+  shelter_whatsapp?: string;
+};
 
 function ContactoInner() {
   const router = useRouter();
@@ -23,10 +35,9 @@ function ContactoInner() {
   const [phase, setPhase] = useState<"loading" | "form" | "done">("loading");
   const [profile, setProfile] = useState<AdopterProfile | null>(null);
   const [dogId, setDogId] = useState<number | null>(null);
+  const [dog, setDog] = useState<DogSummary | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [message, setMessage] = useState("");
-  const [dogName, setDogName] = useState("");
-  const [shelterWhatsapp, setShelterWhatsapp] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -71,15 +82,17 @@ function ContactoInner() {
       setDogId(dogNum);
 
       try {
-        const dog = (await apiFetch(`/api/dogs/${dogNum}`)) as {
-          name: string;
-          shelter_whatsapp?: string;
-        };
-        setDogName(dog.name);
-        setShelterWhatsapp(dog.shelter_whatsapp || "");
+        const d = (await apiFetch(`/api/dogs/${dogNum}`)) as DogSummary & { age_estimate?: string };
+        setDog({
+          name: d.name,
+          city: d.city || "",
+          province: d.province || "",
+          breed: d.breed || "",
+          main_image_url: d.main_image_url,
+          shelter_whatsapp: d.shelter_whatsapp,
+        });
       } catch {
-        setDogName("");
-        setShelterWhatsapp("");
+        setDog({ name: `Perro #${dogNum}`, city: "", province: "", breed: "", main_image_url: null });
       }
 
       let compat = scoreParam ? Number(scoreParam) : NaN;
@@ -132,9 +145,14 @@ function ContactoInner() {
     }
   };
 
+  const dogName = dog?.name || (dogId ? `Perro #${dogId}` : "");
+  const messagePlaceholder = dogName
+    ? `Cuéntales por qué te interesa a ${dogName}, tu disponibilidad para visita, etc.`
+    : "Cuéntales por qué te interesa este perro, tu disponibilidad para visita, etc.";
+
   if (phase === "loading") {
     return (
-      <div className="container" style={{ padding: "2rem 0", maxWidth: 560 }}>
+      <div className={`container ${styles.page}`}>
         <p style={{ color: "var(--muted)" }}>Preparando tu solicitud…</p>
       </div>
     );
@@ -142,9 +160,17 @@ function ContactoInner() {
 
   if (phase === "done") {
     return (
-      <div className="container" style={{ padding: "2rem 0", maxWidth: 560 }}>
+      <div className={`container ${styles.page}`}>
         <h1>Solicitud enviada</h1>
-        <p>El refugio recibirá tus datos. Gracias por dar un paso responsable hacia la adopción.</p>
+        <p>
+          El refugio recibirá tus datos para contactarte sobre{" "}
+          <strong>{dogName}</strong>. Gracias por dar un paso responsable hacia la adopción.
+        </p>
+        {dogId ? (
+          <p style={{ marginTop: "0.75rem" }}>
+            <Link href={`/perros/${dogId}`}>Volver a la ficha de {dogName}</Link>
+          </p>
+        ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" }}>
           <Link href="/perros" className="btn btn-secondary">
             Ver más perros
@@ -159,7 +185,7 @@ function ContactoInner() {
 
   if (!profile || !dogId) {
     return (
-      <div className="container" style={{ padding: "2rem 0", maxWidth: 560 }}>
+      <div className={`container ${styles.page}`}>
         <h1 style={{ marginTop: 0 }}>Contacto por adopción</h1>
         {err ? <p className="notice">{err}</p> : null}
         <Link href="/perros">Ver perros</Link>
@@ -168,19 +194,52 @@ function ContactoInner() {
   }
 
   return (
-    <div className="container" style={{ padding: "2rem 0", maxWidth: 560 }}>
+    <div className={`container ${styles.page}`}>
       <h1 style={{ marginTop: 0 }}>Solicitud de contacto</h1>
-      <p style={{ color: "var(--muted)" }}>
-        Usamos el perfil que ya completaste. Solo necesitas un mensaje para este perro.
+      <p className={styles.lead}>
+        Estás enviando una solicitud para <strong>{dogName}</strong>. Usamos el perfil que ya completaste; solo
+        añade un mensaje opcional para el refugio.
         {score !== null ? (
           <>
             {" "}
-            Compatibilidad orientativa: <strong>{score}</strong>
+            Compatibilidad orientativa con {dogName}: <strong>{score}%</strong>.
           </>
         ) : null}
       </p>
 
-      <div className="card" style={{ padding: "1rem 1.25rem", marginBottom: "1rem", background: "#f8f9f8" }}>
+      <div className={styles.dogCard} role="region" aria-label="Perro seleccionado">
+        <div className={styles.dogPhoto}>
+          {dog?.main_image_url ? (
+            <Image
+              src={resolveMediaUrl(dog.main_image_url)}
+              alt=""
+              fill
+              className={styles.dogPhotoImg}
+              sizes="72px"
+              unoptimized
+            />
+          ) : (
+            <div className={styles.dogPhotoEmpty} aria-hidden />
+          )}
+        </div>
+        <div className={styles.dogCardBody}>
+          <p className={styles.dogCardLabel}>Perro de tu solicitud</p>
+          <p className={styles.dogCardName}>{dogName}</p>
+          {dog?.city || dog?.province ? (
+            <p className={styles.dogCardMeta}>
+              📍 {[dog.city, dog.province].filter(Boolean).join(", ")}
+              {dog.breed ? ` · ${dog.breed}` : ""}
+            </p>
+          ) : dog?.breed ? (
+            <p className={styles.dogCardMeta}>{dog.breed}</p>
+          ) : null}
+          <Link href={`/perros/${dogId}`} className={styles.dogCardLink}>
+            Ver ficha del perro
+          </Link>
+        </div>
+      </div>
+
+      <div className={`card ${styles.profileCard}`}>
         <p style={{ margin: "0 0 0.35rem", fontSize: "0.85rem", color: "var(--muted)" }}>Tus datos (del cuestionario)</p>
         <p style={{ margin: 0 }}>
           <strong>{profile.name}</strong> · {profile.email} · {profile.phone}
@@ -193,13 +252,18 @@ function ContactoInner() {
         </p>
       </div>
 
-      <form className="card" style={{ padding: "1.5rem" }} onSubmit={submit}>
+      <form className={`card ${styles.formCard}`} onSubmit={submit}>
+        <div className={styles.readonlyField}>
+          <label htmlFor="contacto-perro">Perro</label>
+          <p id="contacto-perro">{dogName}</p>
+        </div>
         <div className="field">
-          <label>Mensaje para el refugio (opcional)</label>
+          <label htmlFor="contacto-mensaje">Mensaje para el refugio (opcional)</label>
           <textarea
+            id="contacto-mensaje"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Cuéntales por qué te interesa este perro, tu disponibilidad para visita, etc."
+            placeholder={messagePlaceholder}
             rows={5}
           />
         </div>
@@ -208,12 +272,12 @@ function ContactoInner() {
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Enviando…" : "Enviar solicitud"}
           </button>
-          {shelterWhatsapp && dogName ? (
+          {dog?.shelter_whatsapp && dogName ? (
             <a
               href={
                 whatsappUrl(
-                  shelterWhatsapp,
-                  `Hola, soy ${profile.name}. Me interesa ${dogName} (FriendInMe). ${message ? message.slice(0, 200) : ""}`
+                  dog.shelter_whatsapp,
+                  `Hola, soy ${profile.name}. Me interesa adoptar a ${dogName} (FriendInMe). ${message ? message.slice(0, 200) : ""}`
                 ) || "#"
               }
               className="btn btn-secondary"

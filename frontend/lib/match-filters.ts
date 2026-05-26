@@ -5,6 +5,7 @@ export type ListingMatchFilters = {
   energy_level?: string;
   province?: string;
   breed?: string;
+  age?: string;
 };
 
 const STORAGE_KEY = "fi_listing_filters";
@@ -43,16 +44,18 @@ export function filtersFromSearchParams(sp: URLSearchParams): ListingMatchFilter
   const energy = sp.get("energy") || sp.get("energy_level");
   const province = sp.get("province");
   const breed = sp.get("breed");
+  const age = sp.get("age");
   if (size) out.size = size;
   if (energy) out.energy_level = energy;
   if (province) out.province = province;
   if (breed) out.breed = breed;
+  if (age) out.age = age;
   return out;
 }
 
 export function hasListingFilters(f: ListingMatchFilters | null | undefined): boolean {
   if (!f) return false;
-  return Boolean(f.size || f.energy_level || f.province || f.breed);
+  return Boolean(f.size || f.energy_level || f.province || f.breed || f.age);
 }
 
 export function cuestionarioHref(filters?: ListingMatchFilters | null, dogId?: string | null): string {
@@ -62,6 +65,7 @@ export function cuestionarioHref(filters?: ListingMatchFilters | null, dogId?: s
   if (filters?.energy_level) q.set("energy", filters.energy_level);
   if (filters?.province) q.set("province", filters.province);
   if (filters?.breed) q.set("breed", filters.breed);
+  if (filters?.age) q.set("age", filters.age);
   if (hasListingFilters(filters)) q.set("from", "listing");
   const qs = q.toString();
   return qs ? `/cuestionario?${qs}` : "/cuestionario";
@@ -71,12 +75,14 @@ export function buildListingFiltersFromListingState(
   province: string,
   breed: string,
   size: string,
-  energy: string
+  energy: string,
+  age: string
 ): ListingMatchFilters {
   const f: ListingMatchFilters = {};
   if (province) f.province = province;
   if (breed) f.breed = breed;
   if (size) f.size = size;
   if (energy) f.energy_level = energy;
+  if (age) f.age = age;
   return f;
 }

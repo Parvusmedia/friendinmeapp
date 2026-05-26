@@ -35,9 +35,12 @@
 }
 
 .inner small {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   color: #64748b;
-  text-transform: lowercase;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
+  max-width: 2.4rem;
 }
 
 .ringSm .inner strong {

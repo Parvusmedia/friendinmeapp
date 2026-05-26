@@ -13,6 +13,7 @@ from app.schemas.dog import DogCreate, DogImagePath, DogPublicDetail, DogRead, D
 from app.schemas.dog_filters import DogFiltersMeta
 from app.services.ai_service import AIService
 from app.services.image_service import ImageService
+from app.utils.age_preferences import AGE_VALUES, dog_matches_age_preference
 from app.utils.dependencies import get_optional_user, require_shelter_or_admin
 from app.utils.dog_photos import count_valid_photos
 
@@ -64,6 +65,7 @@ def list_dogs(
     breed: str | None = None,
     size: str | None = None,
     energy_level: str | None = None,
+    age: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
     shelter_id: int | None = None,
 ) -> list[Dog]:
@@ -98,6 +100,9 @@ def list_dogs(
             pass
 
     rows = q.order_by(Dog.created_at.desc()).all()
+    age_key = (age or "").strip().lower()
+    if age_key in AGE_VALUES:
+        rows = [d for d in rows if dog_matches_age_preference(d.age_estimate, [age_key])]
     return [
         DogRead.model_validate(d).model_copy(update={"photo_count": count_valid_photos(d)})
         for d in rows

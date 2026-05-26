@@ -2,12 +2,14 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
+import { CompatResultDetail } from "@/components/CompatResultDetail";
+import { CompatRing } from "@/components/CompatRing";
 import { DogPhotoThumb } from "@/components/DogPhoto";
-import { MatchBreakdown } from "@/components/MatchBreakdown";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getStoredAdopterEmail, getStoredAdopterId } from "@/lib/adopter-session";
+import { matchLevelLabel } from "@/lib/match-labels";
 import styles from "./resultados.module.css";
 
 type BreakdownItem = { key: string; label: string; percent: number; status: string };
@@ -23,6 +25,24 @@ type MatchRow = {
 };
 
 type Dog = { id: number; name: string; main_image_url: string | null; province: string; city: string };
+
+async function enrichRow(adopterId: string, row: MatchRow): Promise<MatchRow> {
+  if (row.breakdown?.length) return row;
+  try {
+    const preview = (await apiFetch(
+      `/api/matches/preview?adopter_profile_id=${adopterId}&dog_id=${row.dog_id}`
+    )) as MatchRow;
+    return {
+      ...row,
+      breakdown: preview.breakdown ?? [],
+      reasons: row.reasons.length ? row.reasons : preview.reasons,
+      warnings: row.warnings.length ? row.warnings : preview.warnings,
+      match_level: row.match_level || preview.match_level,
+    };
+  } catch {
+    return row;
+  }
+}
 
 function ResultadosInner() {
   const router = useRouter();
@@ -49,6 +69,28 @@ function ResultadosInner() {
       /* ignore */
     }
   }, []);
+
+  const loadDogsAndRows = useCallback(async (results: MatchRow[], aid: string) => {
+    let sorted = [...results].sort((a, b) => b.compatibility_score - a.compatibility_score);
+    if (highlightDogId) {
+      const hid = Number(highlightDogId);
+      sorted = [...sorted].sort((a, b) => {
+        if (a.dog_id === hid) return -1;
+        if (b.dog_id === hid) return 1;
+        return b.compatibility_score - a.compatibility_score;
+      });
+    }
+    const enriched = await Promise.all(sorted.map((r) => enrichRow(aid, r)));
+    setRows(enriched);
+    const pairs = await Promise.all(
+      enriched.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
+    );
+    const m: Record<number, Dog> = {};
+    pairs.forEach(([id, d]) => {
+      m[id] = d;
+    });
+    setDogs(m);
+  }, [highlightDogId]);
 
   useEffect(() => {
     if (token && !adopterId) {
@@ -79,32 +121,11 @@ function ResultadosInner() {
       return;
     }
 
-    const loadRows = async (results: MatchRow[]) => {
-      let sorted = [...results].sort((a, b) => b.compatibility_score - a.compatibility_score);
-      if (highlightDogId) {
-        const hid = Number(highlightDogId);
-        sorted = [...sorted].sort((a, b) => {
-          if (a.dog_id === hid) return -1;
-          if (b.dog_id === hid) return 1;
-          return b.compatibility_score - a.compatibility_score;
-        });
-      }
-      setRows(sorted);
-      const pairs = await Promise.all(
-        sorted.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
-      );
-      const m: Record<number, Dog> = {};
-      pairs.forEach(([id, d]) => {
-        m[id] = d;
-      });
-      setDogs(m);
-    };
-
     const raw = sessionStorage.getItem("fi_last_match");
     if (raw) {
       try {
         const data = JSON.parse(raw) as { results: MatchRow[] };
-        loadRows(data.results).catch(() => setErr("No se pudieron leer los resultados."));
+        loadDogsAndRows(data.results, adopterId).catch(() => setErr("No se pudieron leer los resultados."));
         return;
       } catch {
         /* fallback API */
@@ -125,7 +146,7 @@ function ResultadosInner() {
           setErr("No hay resultados guardados. Completa el cuestionario de nuevo.");
           return;
         }
-        return loadRows(
+        return loadDogsAndRows(
           list.map((r) => ({
             dog_id: r.dog_id,
             compatibility_score: r.compatibility_score,
@@ -134,11 +155,12 @@ function ResultadosInner() {
             warnings: r.warnings,
             ai_explanation: r.ai_explanation,
             breakdown: [],
-          }))
+          })),
+          adopterId
         );
       })
       .catch(() => setErr("No hay resultados. Repite el cuestionario."));
-  }, [adopterId, highlightDogId, router, token]);
+  }, [adopterId, highlightDogId, router, token, loadDogsAndRows]);
 
   const recalculate = async () => {
     if (!adopterId) return;
@@ -156,16 +178,7 @@ function ResultadosInner() {
         body: JSON.stringify(body),
       })) as { results: MatchRow[] };
       sessionStorage.setItem("fi_last_match", JSON.stringify(match));
-      const sorted = [...match.results].sort((a, b) => b.compatibility_score - a.compatibility_score);
-      setRows(sorted);
-      const pairs = await Promise.all(
-        sorted.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
-      );
-      const m: Record<number, Dog> = {};
-      pairs.forEach(([id, d]) => {
-        m[id] = d;
-      });
-      setDogs(m);
+      await loadDogsAndRows(match.results, adopterId);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error al recalcular");
     } finally {
@@ -215,26 +228,40 @@ function ResultadosInner() {
     );
   }
 
-  const title = highlightDogId && rows.length === 1 ? "Compatibilidad con este perro" : "Tus mejores matches";
+  if (!rows.length) {
+    return (
+      <div className={`container ${styles.page}`}>
+        <p style={{ color: "var(--muted)" }}>Cargando resultados…</p>
+      </div>
+    );
+  }
+
+  const primaryId = highlightDogId ? Number(highlightDogId) : rows.length === 1 ? rows[0].dog_id : null;
+  const primaryRow = primaryId ? rows.find((r) => r.dog_id === primaryId) ?? rows[0] : null;
+  const otherRows = primaryRow ? rows.filter((r) => r.dog_id !== primaryRow.dog_id) : rows;
+  const showDetail = Boolean(primaryRow && adopterId);
+  const listOnly = !showDetail;
+
+  const title = showDetail && primaryRow
+    ? `Compatibilidad con ${dogs[primaryRow.dog_id]?.name || "este perro"}`
+    : "Tus mejores matches";
 
   return (
-    <div className="container" style={{ padding: "2rem 0" }}>
+    <div className={`container ${styles.page}`}>
       <h1 style={{ marginTop: 0 }}>{title}</h1>
-      <p style={{ color: "var(--muted)" }}>
-        {highlightDogId && rows.length === 1
-          ? "Resultado orientativo para el perro que estabas viendo."
-          : "Hasta 5 perros ordenados por compatibilidad (0–100)."}{" "}
-        <strong>No es una garantía</strong>: habla con el refugio y visita al animal.
-      </p>
+      {!showDetail ? (
+        <p className={styles.lead}>
+          Hasta 5 perros ordenados por compatibilidad (0–100). <strong>No es una garantía</strong>: habla con el
+          refugio y visita al animal.
+        </p>
+      ) : null}
       {matchMeta?.filters_applied ? (
-        <p style={{ color: "var(--muted)", fontSize: "0.92rem" }}>
+        <p className={styles.lead} style={{ fontSize: "0.92rem" }}>
           Analizamos <strong>{matchMeta.candidates_count}</strong> perro
           {matchMeta.candidates_count === 1 ? "" : "s"} con tus criterios ({matchMeta.filters_applied}).
         </p>
       ) : null}
-      <div className="notice" style={{ marginBottom: "1rem" }}>
-        La puntuación resume encaje según la información disponible.
-      </div>
+
       <div className={styles.toolbar}>
         <button type="button" className="btn btn-secondary" onClick={recalculate} disabled={recalculating}>
           {recalculating ? "Recalculando…" : "Actualizar compatibilidad"}
@@ -247,70 +274,112 @@ function ResultadosInner() {
         </button>
       </div>
       {shareOk ? <p className={styles.shareOk}>Enlace copiado al portapapeles.</p> : null}
-      {emailMsg ? <p className="notice" style={{ marginTop: 0 }}>{emailMsg}</p> : null}
-      <div className="stack" style={{ gap: "1.25rem" }}>
-        {rows.map((r) => {
-          const d = dogs[r.dog_id];
-          const highlighted = highlightDogId && String(r.dog_id) === highlightDogId;
-          return (
-            <article
-              key={r.dog_id}
-              className="card"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0,1fr)",
-                overflow: "hidden",
-                outline: highlighted ? "2px solid var(--accent)" : undefined,
-              }}
-            >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", padding: "1rem" }}>
-                <div style={{ width: 160, flexShrink: 0, borderRadius: 12, overflow: "hidden" }}>
+      {emailMsg ? (
+        <p className="notice" style={{ marginTop: 0 }}>
+          {emailMsg}
+        </p>
+      ) : null}
+
+      {showDetail && primaryRow && adopterId ? (
+        <CompatResultDetail
+          dog={{
+            id: primaryRow.dog_id,
+            name: dogs[primaryRow.dog_id]?.name || `Perro #${primaryRow.dog_id}`,
+            city: dogs[primaryRow.dog_id]?.city || "",
+            province: dogs[primaryRow.dog_id]?.province || "",
+            main_image_url: dogs[primaryRow.dog_id]?.main_image_url ?? null,
+          }}
+          score={primaryRow.compatibility_score}
+          matchLevel={primaryRow.match_level}
+          reasons={primaryRow.reasons}
+          warnings={primaryRow.warnings}
+          aiExplanation={primaryRow.ai_explanation}
+          breakdown={primaryRow.breakdown ?? []}
+          adopterId={adopterId}
+        />
+      ) : null}
+
+      {listOnly ? (
+        <div className={styles.compactList}>
+          {rows.map((r) => {
+            const d = dogs[r.dog_id];
+            return (
+              <article key={r.dog_id} className={styles.compactCard}>
+                <div style={{ width: 72, flexShrink: 0, borderRadius: 10, overflow: "hidden" }}>
                   <DogPhotoThumb
                     src={d?.main_image_url}
                     alt={d?.name ? `Foto de ${d.name}` : "Perro"}
-                    height={140}
+                    height={72}
                     href={`/perros/${r.dog_id}`}
                   />
                 </div>
-                <div style={{ flex: "1 1 200px" }}>
-                  {highlighted ? (
-                    <span className="tag" style={{ marginBottom: "0.35rem", display: "inline-block" }}>
-                      Perro consultado
-                    </span>
-                  ) : null}
-                  <h2 style={{ margin: "0 0 0.25rem" }}>{d?.name || `Perro #${r.dog_id}`}</h2>
-                  <p style={{ margin: 0, color: "var(--muted)" }}>
-                    {d ? `${d.city}, ${d.province}` : ""} · Score: <strong>{r.compatibility_score}</strong> · Nivel:{" "}
-                    {r.match_level}
+                <CompatRing pct={r.compatibility_score} size="sm" />
+                <div className={styles.compactCardMain}>
+                  <h3>{d?.name || `Perro #${r.dog_id}`}</h3>
+                  <p>
+                    {d ? `${d.city}, ${d.province}` : ""} · {matchLevelLabel(r.match_level)}
                   </p>
-                  <p style={{ marginTop: "0.5rem" }}>{r.ai_explanation}</p>
-                  <p style={{ fontSize: "0.9rem", color: "var(--accent)" }}>
-                    <strong>Por qué encaja:</strong> {r.reasons.join(" ")}
-                  </p>
-                  {r.warnings.length ? (
-                    <p style={{ fontSize: "0.9rem", color: "var(--warn)" }}>
-                      <strong>Atención:</strong> {r.warnings.join(" ")}
+                </div>
+                <div className={styles.compactActions}>
+                  <Link
+                    href={`/resultados?adopter=${adopterId}&dog=${r.dog_id}`}
+                    className="btn btn-primary"
+                    style={{ padding: "0.45rem 0.9rem", fontSize: "0.9rem" }}
+                  >
+                    Ver análisis
+                  </Link>
+                  <Link
+                    href={`/contacto?dog=${r.dog_id}&adopter=${adopterId}&score=${Math.round(r.compatibility_score)}`}
+                    className="btn btn-secondary"
+                    style={{ padding: "0.45rem 0.9rem", fontSize: "0.9rem" }}
+                  >
+                    Contactar
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {showDetail && otherRows.length > 0 && adopterId ? (
+        <section className={styles.otherMatches} aria-labelledby="otros-matches">
+          <h2 id="otros-matches">Otros perros compatibles</h2>
+          <div className={styles.compactList}>
+            {otherRows.map((r) => {
+              const d = dogs[r.dog_id];
+              return (
+                <article key={r.dog_id} className={styles.compactCard}>
+                  <div style={{ width: 72, flexShrink: 0, borderRadius: 10, overflow: "hidden" }}>
+                    <DogPhotoThumb
+                      src={d?.main_image_url}
+                      alt={d?.name ? `Foto de ${d.name}` : "Perro"}
+                      height={72}
+                      href={`/perros/${r.dog_id}`}
+                    />
+                  </div>
+                  <CompatRing pct={r.compatibility_score} size="sm" />
+                  <div className={styles.compactCardMain}>
+                    <h3>{d?.name || `Perro #${r.dog_id}`}</h3>
+                    <p>
+                      {d ? `${d.city}, ${d.province}` : ""} · {matchLevelLabel(r.match_level)}
                     </p>
-                  ) : null}
-                  {r.breakdown?.length ? <MatchBreakdown items={r.breakdown} /> : null}
-                  <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <Link href={`/perros/${r.dog_id}`} className="btn btn-secondary" style={{ padding: "0.45rem 0.9rem", fontSize: "0.9rem" }}>
-                      Ver ficha
-                    </Link>
+                  </div>
+                  <div className={styles.compactActions}>
                     <Link
-                      href={`/contacto?dog=${r.dog_id}&adopter=${adopterId}&score=${r.compatibility_score}`}
-                      className="btn btn-primary"
+                      href={`/resultados?adopter=${adopterId}&dog=${r.dog_id}`}
+                      className="btn btn-secondary"
                       style={{ padding: "0.45rem 0.9rem", fontSize: "0.9rem" }}
                     >
-                      Contactar
+                      Ver análisis
                     </Link>
                   </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
