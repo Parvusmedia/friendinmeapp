@@ -155,44 +155,6 @@ export function CompatResultDetail({
         </div>
       </section>
 
-      <div className={styles.twoCol}>
-        <section className={`${styles.colCard} ${styles.colGood}`} aria-labelledby="por-que-encaja">
-          <h3 id="por-que-encaja">🐾 Por qué encaja</h3>
-          {reasons.length ? (
-            <ul className={styles.list}>
-              {reasons.map((r, i) => (
-                <li key={i}>
-                  <span className={styles.listIcon} aria-hidden>
-                    ✓
-                  </span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.emptyNote}>Puntuación basada en los datos disponibles del cuestionario y la ficha.</p>
-          )}
-        </section>
-
-        <section className={`${styles.colCard} ${styles.colWarn}`} aria-labelledby="puntos-atencion">
-          <h3 id="puntos-atencion">⚠ Puntos a tener en cuenta</h3>
-          {warnings.length ? (
-            <ul className={styles.list}>
-              {warnings.map((w, i) => (
-                <li key={i}>
-                  <span className={styles.listIcon} aria-hidden>
-                    !
-                  </span>
-                  <span>{w}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.emptyNote}>No hay alertas destacadas en este análisis.</p>
-          )}
-        </section>
-      </div>
-
       {breakdown.length > 0 ? (
         <section className={styles.breakdownSection} aria-labelledby="desglose-areas">
           <h3 id="desglose-areas">📊 Desglose por áreas</h3>
