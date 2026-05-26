@@ -20,6 +20,7 @@ import {
   leadStatusShort,
   leadStatusTagClass,
 } from "@/lib/lead-status";
+import { PartnerPlacement } from "@/components/PartnerPlacement";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { whatsappUrl } from "@/lib/whatsapp";
 import styles from "./contacto.module.css";
@@ -29,9 +30,38 @@ type DogSummary = {
   city: string;
   province: string;
   breed: string;
+  size?: string;
+  energy_level?: string;
+  age_estimate?: string;
   main_image_url: string | null;
   shelter_whatsapp?: string;
 };
+
+function dogPartnerContext(
+  dogId: number | null,
+  dog: DogSummary | null,
+  existing: AdopterLead | null
+): {
+  dogId?: number;
+  dogName?: string;
+  breed?: string;
+  size?: string;
+  energy_level?: string;
+  age_estimate?: string;
+} {
+  if (existing) {
+    return { dogId: existing.dog_id, dogName: existing.dog_name };
+  }
+  if (!dog || !dogId) return {};
+  return {
+    dogId,
+    dogName: dog.name,
+    breed: dog.breed,
+    size: dog.size,
+    energy_level: dog.energy_level,
+    age_estimate: dog.age_estimate,
+  };
+}
 
 function ContactoInner() {
   const router = useRouter();
@@ -92,12 +122,15 @@ function ContactoInner() {
       setDogId(dogNum);
 
       try {
-        const d = (await apiFetch(`/api/dogs/${dogNum}`)) as DogSummary & { age_estimate?: string };
+        const d = (await apiFetch(`/api/dogs/${dogNum}`)) as DogSummary;
         setDog({
           name: d.name,
           city: d.city || "",
           province: d.province || "",
           breed: d.breed || "",
+          size: d.size,
+          energy_level: d.energy_level,
+          age_estimate: d.age_estimate,
           main_image_url: d.main_image_url,
           shelter_whatsapp: d.shelter_whatsapp,
         });
@@ -221,6 +254,8 @@ function ContactoInner() {
             <Link href={`/perros/${dogId}`}>Volver a la ficha de {dogName}</Link>
           </p>
         ) : null}
+        <PartnerPlacement placement="lead_success" context={dogPartnerContext(dogId, dog, null)} />
+
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" }}>
           <Link href="/mis-solicitudes" className="btn btn-primary">
             Mis solicitudes
@@ -277,6 +312,8 @@ function ContactoInner() {
         </div>
 
         {err ? <p className="notice">{err}</p> : null}
+
+        <PartnerPlacement placement="lead_success" context={dogPartnerContext(dogId, dog, existingLead)} />
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" }}>
           <Link href="/mis-solicitudes" className="btn btn-primary">

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CompatRing } from "@/components/CompatRing";
+import { PartnerPlacement } from "@/components/PartnerPlacement";
 import { DOG_PHOTO_OBJECT_POSITION } from "@/components/DogPhoto";
 import { apiFetch } from "@/lib/api";
 import { getStoredAdopterId } from "@/lib/adopter-session";
@@ -271,6 +272,18 @@ export function PerroDetalleView({ dog, gallery, similar }: Props) {
             ))}
           </div>
         </section>
+
+        <PartnerPlacement
+          placement="dog_detail_footer"
+          context={{
+            dogId: dog.id,
+            dogName: dog.name,
+            breed: dog.breed,
+            size: dog.size,
+            energy_level: dog.energy_level,
+            age_estimate: dog.age_estimate,
+          }}
+        />
 
         {similar.length > 0 ? (
           <section className={styles.similar} aria-labelledby="similar-heading">

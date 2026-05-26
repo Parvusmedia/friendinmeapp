@@ -8,6 +8,7 @@ import {
   matchLevelHeadline,
   matchLevelLabel,
 } from "@/lib/match-labels";
+import { PartnerPlacement } from "@/components/PartnerPlacement";
 import { buildQuickSummary } from "@/lib/match-summary";
 import { resolveMediaUrl } from "@/lib/media-url";
 import styles from "./compat-result-detail.module.css";
@@ -20,6 +21,10 @@ type DogInfo = {
   city: string;
   province: string;
   main_image_url: string | null;
+  breed?: string;
+  size?: string;
+  energy_level?: string;
+  age_estimate?: string;
 };
 
 type Props = {
@@ -154,6 +159,18 @@ export function CompatResultDetail({
           <p className={styles.summaryDisclaimer}>Es una guía orientativa, no una garantía.</p>
         </div>
       </section>
+
+      <PartnerPlacement
+        placement="match_after_summary"
+        context={{
+          dogId: dog.id,
+          dogName: dog.name,
+          breed: dog.breed,
+          size: dog.size,
+          energy_level: dog.energy_level,
+          age_estimate: dog.age_estimate,
+        }}
+      />
 
       {breakdown.length > 0 ? (
         <section className={styles.breakdownSection} aria-labelledby="desglose-areas">

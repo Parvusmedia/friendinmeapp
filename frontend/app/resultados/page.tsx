@@ -24,7 +24,17 @@ type MatchRow = {
   breakdown?: BreakdownItem[];
 };
 
-type Dog = { id: number; name: string; main_image_url: string | null; province: string; city: string };
+type Dog = {
+  id: number;
+  name: string;
+  main_image_url: string | null;
+  province: string;
+  city: string;
+  breed?: string;
+  size?: string;
+  energy_level?: string;
+  age_estimate?: string;
+};
 
 async function enrichRow(adopterId: string, row: MatchRow): Promise<MatchRow> {
   if (row.breakdown?.length) return row;
@@ -288,6 +298,10 @@ function ResultadosInner() {
             city: dogs[primaryRow.dog_id]?.city || "",
             province: dogs[primaryRow.dog_id]?.province || "",
             main_image_url: dogs[primaryRow.dog_id]?.main_image_url ?? null,
+            breed: dogs[primaryRow.dog_id]?.breed,
+            size: dogs[primaryRow.dog_id]?.size,
+            energy_level: dogs[primaryRow.dog_id]?.energy_level,
+            age_estimate: dogs[primaryRow.dog_id]?.age_estimate,
           }}
           score={primaryRow.compatibility_score}
           matchLevel={primaryRow.match_level}

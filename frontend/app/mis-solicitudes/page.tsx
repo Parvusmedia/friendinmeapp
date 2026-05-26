@@ -11,6 +11,7 @@ import {
   leadStatusShort,
   leadStatusTagClass,
 } from "@/lib/lead-status";
+import { PartnerPlacement } from "@/components/PartnerPlacement";
 import { resolveMediaUrl } from "@/lib/media-url";
 import styles from "./mis-solicitudes.module.css";
 
@@ -149,6 +150,13 @@ export default function MisSolicitudesPage() {
                   </button>
                 ) : null}
               </div>
+              {r.status === "new" || r.status === "contacted" || r.status === "in_process" ? (
+                <PartnerPlacement
+                  placement="lead_list_pending"
+                  compact
+                  context={{ dogId: r.dog_id, dogName: r.dog_name }}
+                />
+              ) : null}
             </div>
           </article>
         ))}
