@@ -1,0 +1,61 @@
+.page {
+  padding: 2rem 0 3rem;
+  max-width: 720px;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.updated {
+  margin: 0 0 2rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.section {
+  margin-bottom: 1.75rem;
+}
+
+.section h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.section p {
+  margin: 0 0 0.75rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.section p:last-child {
+  margin-bottom: 0;
+}
+
+.section ul {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.section li {
+  margin-bottom: 0.35rem;
+}
+
+.section a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.subheading {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
