@@ -80,6 +80,20 @@ def _preferred_energy_to_rank(pref: EnergyPreference) -> int | None:
     return mapping[pref]
 
 
+def _note_info_gap(
+    warnings: list[str],
+    seen: set[str],
+    message: str,
+    *,
+    penalty: float,
+) -> float:
+    """Registra información pendiente en advertencias (no en motivos positivos)."""
+    if message not in seen:
+        warnings.append(message)
+        seen.add(message)
+    return penalty
+
+
 def build_match_breakdown(adopter: AdopterProfile, dog: Dog) -> list[MatchBreakdownItem]:
     """Orientative sub-scores for UI (not stored separately in DB)."""
     items: list[MatchBreakdownItem] = []
@@ -104,10 +118,16 @@ def build_match_breakdown(adopter: AdopterProfile, dog: Dog) -> list[MatchBreakd
     family_penalty = 0
     if adopter.has_children and dog.good_with_children == TriState.no:
         family_penalty += 40
+    elif adopter.has_children and dog.good_with_children == TriState.unknown:
+        family_penalty += 18
     if adopter.has_cats and dog.sociability_with_cats == Sociability.low:
         family_penalty += 25
+    elif adopter.has_cats and dog.sociability_with_cats == Sociability.unknown:
+        family_penalty += 18
     if adopter.has_other_dogs and dog.sociability_with_dogs == Sociability.low:
         family_penalty += 25
+    elif adopter.has_other_dogs and dog.sociability_with_dogs == Sociability.unknown:
+        family_penalty += 18
     family_score = max(15, 88 - family_penalty)
     fam_status = "risk" if family_penalty >= 35 else ("warn" if family_penalty else "good")
     items.append(MatchBreakdownItem("family", "Familia y convivencia", family_score, fam_status))
@@ -131,6 +151,8 @@ def build_match_breakdown(adopter: AdopterProfile, dog: Dog) -> list[MatchBreakd
 def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
     reasons: list[str] = []
     warnings: list[str] = []
+    info_gaps_seen: set[str] = set()
+    info_gap_count = 0
     score = 72.0
     critical = False
 
@@ -144,23 +166,43 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
             breakdown=[],
         )
 
-    # --- Unknown / pending info (no inventar) ---
+    def gap(message: str, penalty: float) -> None:
+        nonlocal score, info_gap_count
+        score -= _note_info_gap(warnings, info_gaps_seen, message, penalty=penalty)
+        info_gap_count += 1
+
+    # --- Información pendiente (no va a «por qué encaja») ---
     if dog.good_with_children == TriState.unknown and adopter.has_children:
-        reasons.append("No consta en la ficha si el perro convive bien con niños; conviene preguntar al refugio.")
+        gap(
+            "No consta en la ficha si el perro convive bien con niños; conviene preguntar al refugio.",
+            10.0,
+        )
     if dog.sociability_with_cats == Sociability.unknown and adopter.has_cats:
-        reasons.append("No consta la convivencia del perro con gatos; el refugio puede concretarlo.")
+        gap(
+            "No consta la convivencia del perro con gatos; el refugio puede concretarlo.",
+            10.0,
+        )
+    if adopter.has_other_dogs and dog.sociability_with_dogs == Sociability.unknown:
+        gap(
+            "Hay otro perro en casa; no consta claramente la sociabilidad con otros perros: preguntar al refugio.",
+            10.0,
+        )
     if dog.can_live_in_apartment == TriState.unknown and adopter.housing_type == HousingType.apartment:
-        reasons.append("No consta si el perro se adapta a piso; información pendiente con el refugio.")
+        gap(
+            "No consta si el perro se adapta a piso; información pendiente con el refugio.",
+            8.0,
+        )
     if dog.needs_experience == TriState.unknown:
-        reasons.append("No consta si el perro requiere experiencia previa; verificar con el refugio.")
+        gap(
+            "No consta si el perro requiere experiencia previa; verificar con el refugio.",
+            5.0,
+        )
 
     # --- Strong penalties ---
     if adopter.housing_type == HousingType.apartment and dog.can_live_in_apartment == TriState.no:
         warnings.append("El adoptante vive en piso y la ficha indica que el perro no es adecuado para apartamento.")
         score -= 38
         critical = True
-    elif adopter.housing_type == HousingType.apartment and dog.can_live_in_apartment == TriState.unknown:
-        score -= 5
 
     if dog.needs_experience == TriState.yes and adopter.previous_dog_experience == DogExperience.none:
         warnings.append("El perro requiere experiencia y el adoptante indica experiencia nula con perros.")
@@ -178,8 +220,6 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
     if adopter.has_cats and dog.sociability_with_cats in (Sociability.low,):
         warnings.append("Hay gatos en casa y la ficha sugiere baja sociabilidad del perro con gatos.")
         score -= 22
-    elif adopter.has_cats and dog.sociability_with_cats == Sociability.unknown:
-        score -= 4
 
     adopter_away = _hours_away_rank(adopter.hours_away_from_home)
     alone_tol = _dog_alone_tolerance_rank(dog.can_be_alone_hours)
@@ -188,8 +228,11 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
             "El tiempo fuera de casa del adoptante podría ser elevado para la tolerancia a la soledad indicada del perro."
         )
         score -= 20
-    elif alone_tol is None and adopter_away >= 4:
-        reasons.append("No consta bien la tolerancia del perro a estar solo; conviene validarlo con el refugio.")
+    elif alone_tol is None and adopter_away >= 3:
+        gap(
+            "No consta bien la tolerancia del perro a estar solo; conviene validarlo con el refugio.",
+            7.0,
+        )
 
     # --- Positive signals ---
     if adopter.province_preference and adopter.province_preference.lower() == dog.province.lower():
@@ -253,9 +296,6 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
     elif adopter.has_other_dogs and dog.sociability_with_dogs in (Sociability.low,):
         warnings.append("Ya hay perro en casa y la ficha indica baja sociabilidad con otros perros.")
         score -= 14
-    elif adopter.has_other_dogs and dog.sociability_with_dogs == Sociability.unknown:
-        reasons.append("Hay otro perro en casa; no consta claramente la sociabilidad: preguntar al refugio.")
-
     # --- Garden bonus ---
     if dog.can_live_in_apartment == TriState.no and adopter.housing_type in (
         HousingType.house_with_garden,
@@ -264,12 +304,23 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
         reasons.append("Tipo de vivienda con espacio exterior encaja con un perro que puede necesitar más espacio.")
         score += 6
 
+    # Techo si hay varios datos por contrastar con el refugio
+    if info_gap_count >= 3:
+        score = min(score, 62.0)
+    elif info_gap_count >= 2:
+        score = min(score, 68.0)
+    elif info_gap_count >= 1:
+        score = min(score, 75.0)
+
     score = max(0.0, min(100.0, round(score, 1)))
 
     if critical and score > 45:
         score = min(score, 44.0)
 
-    if score >= 82 and not critical:
+    # Nunca clasificar «no consta» como motivo positivo
+    reasons = [r for r in reasons if not r.lower().startswith("no consta")]
+
+    if score >= 82 and not critical and info_gap_count == 0:
         level = MatchLevel.excellent
     elif score >= 68:
         level = MatchLevel.good
@@ -279,7 +330,12 @@ def compute_match(adopter: AdopterProfile, dog: Dog) -> MatchComputation:
         level = MatchLevel.risky
 
     if not reasons:
-        reasons.append("Puntuación basada en los datos disponibles; revisa advertencias y consulta al refugio.")
+        if info_gap_count:
+            warnings.append(
+                "Hay aspectos de la ficha sin confirmar; la puntuación es provisional hasta contrastar con el refugio."
+            )
+        else:
+            reasons.append("Puntuación basada en los datos disponibles; revisa advertencias y consulta al refugio.")
 
     breakdown = build_match_breakdown(adopter, dog)
     return MatchComputation(

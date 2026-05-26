@@ -68,8 +68,10 @@ class AIService:
         system = (
             "Eres un asistente de adopción responsable. Explicas compatibilidad en español de forma breve (máx. 4 frases). "
             "REGLAS ESTRICTAS: No inventes datos del perro ni del adoptante. Solo usa el JSON y las listas reasons/warnings. "
+            "Los mensajes que empiezan por «No consta» o indican información pendiente están SOLO en warnings: "
+            "no los presentes como puntos a favor. Si hay warnings de datos sin confirmar, la puntuación es provisional. "
             "No garantices adopción ni compatibilidad absoluta. No des consejo veterinario. "
-            "Si faltan datos, dilo explícitamente. Prioriza bienestar animal y honestidad."
+            "Prioriza bienestar animal y honestidad."
         )
         user = f"Contexto del match (JSON):\n{json.dumps(payload, ensure_ascii=False)}"
         text = await self._openai_chat(system, user)
@@ -100,9 +102,16 @@ class AIService:
             f"Compatibilidad orientativa con {dog.name}: puntuación {match.compatibility_score}/100 "
             f"({level_es}). Es una guía, no una garantía."
         )
+        gap_warnings = [w for w in match.warnings if w.lower().startswith("no consta") or "pendiente" in w.lower()]
+        other_warnings = [w for w in match.warnings if w not in gap_warnings]
+        if gap_warnings:
+            wtext = " Información por confirmar con el refugio: " + " ".join(gap_warnings[:3])
+        elif other_warnings:
+            wtext = " Atención: " + " ".join(other_warnings[:2])
+        else:
+            wtext = ""
         r = " ".join(match.reasons[:2]) if match.reasons else ""
-        w = " Atención: " + " ".join(match.warnings[:2]) if match.warnings else ""
-        return intro + (" " + r if r else "") + (w if w else "") + " Habla siempre con el refugio antes de decidir."
+        return intro + wtext + (" " + r if r else "") + " Habla siempre con el refugio antes de decidir."
 
     async def _openai_chat(self, system: str, user: str) -> str | None:
         url = "https://api.openai.com/v1/chat/completions"

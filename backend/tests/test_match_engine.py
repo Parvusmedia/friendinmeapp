@@ -37,3 +37,21 @@ def test_breakdown_apartment_mismatch():
     housing = next(i for i in items if i.key == "housing")
     assert housing.status == "risk"
     assert housing.percent < 30
+
+
+def test_info_gaps_are_warnings_not_reasons_and_cap_score():
+    adopter = make_adopter(has_children=True, has_cats=True, has_other_dogs=True)
+    dog = make_dog(
+        good_with_children=TriState.unknown,
+        sociability_with_cats=Sociability.unknown,
+        sociability_with_dogs=Sociability.unknown,
+    )
+    comp = compute_match(adopter, dog)
+    assert comp.compatibility_score <= 68
+    assert not any("No consta" in r for r in comp.reasons)
+    assert any("niños" in w for w in comp.warnings)
+    assert any("gatos" in w for w in comp.warnings)
+    assert any("otro perro" in w.lower() for w in comp.warnings)
+    family = next(i for i in comp.breakdown or [] if i.key == "family")
+    assert family.status in ("warn", "risk")
+    assert family.percent < 60
