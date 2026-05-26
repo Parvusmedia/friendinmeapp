@@ -1,5 +1,2 @@
-/**
- * Vista previa del diseño Home1 (respaldo).
- * La home activa está en `/` (Home2).
- */
+/** Vista previa Home1: hero → 3 cajas → perros (orden original). */
 export { default } from "@/app/home-variants/home1/HomePage";

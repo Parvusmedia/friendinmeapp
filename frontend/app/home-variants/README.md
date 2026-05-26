@@ -1,24 +1,27 @@
 # Variantes de la homepage
 
-## Home1 (respaldo)
+## Home1 (respaldo original)
 
-Diseño original: hero grande → 3 cajas → grid de perros y filtros.
+Diseño original: hero grande → **3 cajas** → grid de perros y filtros.
 
-- Código: `home-variants/home1/HomePage.tsx` + `home1.module.css`
-- Vista previa en producción: **/home1**
+- Código: `home-variants/home1/`
+- Vista previa: **/home1**
 
-### Restaurar Home1 como página principal
+## Home2 (respaldo compacto)
+
+Hero corto → perros arriba → valores compactos al final.
+
+- Código: `home-variants/home2/`
+- Vista previa: **/home2**
+
+## Home activa (`/`)
+
+Estilo visual de **Home1** (titular completo, cajas con iconos), pero **perros y filtros justo debajo del hero**, antes de las 3 cajas.
+
+### Restaurar Home1 como página principal (orden antiguo)
 
 ```bash
 cp frontend/app/home-variants/home1/HomePage.tsx frontend/app/page.tsx
 cp frontend/app/home-variants/home1/home1.module.css frontend/app/page.module.css
-# En HomePage.tsx cambiar import styles from "./home1.module.css" → "./page.module.css"
-# O copiar y ajustar el import a: import styles from "./page.module.css"
+# En page.tsx: import styles from "./page.module.css"
 ```
-
-En `home-variants/home1/HomePage.tsx` el import debe ser `./home1.module.css`.  
-Al copiar a `app/page.tsx`, usar `import styles from "./page.module.css"`.
-
-## Home2 (activa en `/`)
-
-Hero compacto → **perros y filtros primero** → cajas informativas al final.

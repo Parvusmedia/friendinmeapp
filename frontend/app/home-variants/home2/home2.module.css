@@ -1,0 +1,280 @@
+/* Home2 — perros arriba, hero compacto, valores al final */
+
+.page {
+  width: 100%;
+  overflow-x: clip;
+  --home-shell: 1120px;
+  --home-gutter: max(1rem, env(safe-area-inset-left));
+  --home-gutter-r: max(1rem, env(safe-area-inset-right));
+}
+
+/* —— Hero compacto —— */
+.hero {
+  padding: 1.1rem var(--home-gutter-r) 0.85rem var(--home-gutter);
+  background: linear-gradient(165deg, #ebe6de 0%, #faf8f5 55%, #faf8f5 100%);
+  border-bottom: 1px solid rgba(20, 31, 45, 0.06);
+}
+
+.heroShell {
+  max-width: var(--home-shell);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.heroMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.badge {
+  align-self: flex-start;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2f7f6d;
+  background: rgba(47, 132, 111, 0.1);
+  border: 1px solid rgba(47, 132, 111, 0.2);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.65rem, 5.5vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  color: #172033;
+  text-wrap: balance;
+}
+
+.accent {
+  color: #2f7f6d;
+}
+
+.lead {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.8vw, 1.08rem);
+  line-height: 1.5;
+  color: #5f6877;
+  max-width: 36rem;
+}
+
+.heroAside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.btnPrimary,
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #3d8b7a 0%, #2a7564 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(42, 117, 100, 0.28);
+}
+
+.btnSecondary {
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #e0dbd4;
+}
+
+.heroScroll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2f7f6d;
+  text-decoration: none;
+}
+
+.heroScroll:hover {
+  text-decoration: underline;
+}
+
+/* —— Perros (prioridad visual) —— */
+.dogsSection {
+  width: 100%;
+  padding: 0.75rem var(--home-gutter-r) 1.5rem var(--home-gutter);
+  background: #faf8f5;
+  box-sizing: border-box;
+}
+
+.dogsInner {
+  max-width: var(--home-shell);
+  margin-inline: auto;
+}
+
+.dogsHeader {
+  margin-bottom: 0.65rem;
+}
+
+.dogsTitle {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.35rem, 3.5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #172033;
+}
+
+.dogsLead {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: #64748b;
+  max-width: 40rem;
+}
+
+.dogsLeadCompact {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #64748b;
+  max-width: 38rem;
+}
+
+/* —— Valores (debajo del grid) —— */
+.values {
+  padding: 1.75rem var(--home-gutter-r) 2.5rem var(--home-gutter);
+  background: linear-gradient(180deg, #f0ebe3 0%, #f5f2eb 100%);
+  border-top: 1px solid rgba(20, 31, 45, 0.06);
+}
+
+.valuesShell {
+  max-width: var(--home-shell);
+  margin-inline: auto;
+}
+
+.valuesKicker {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2f7f6d;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.valueCard {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(20, 31, 45, 0.07);
+  border-radius: 12px;
+}
+
+.valueIcon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.valueTitle {
+  margin: 0 0 0.2rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #172033;
+}
+
+.valueText {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+@media (min-width: 640px) {
+  .heroAside {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    width: auto;
+    min-height: 2.5rem;
+  }
+
+  .heroScroll {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.15rem;
+  }
+
+  .valuesGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .valueCard {
+    display: block;
+    padding: 1rem;
+  }
+
+  .valueIcon {
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    padding: 1.35rem var(--home-gutter-r) 1rem var(--home-gutter);
+  }
+
+  .heroShell {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .heroAside {
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    min-width: 220px;
+  }
+
+  .heroScroll {
+    width: auto;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  .dogsSection {
+    padding-top: 1rem;
+  }
+
+  .values {
+    padding-bottom: 3rem;
+  }
+}

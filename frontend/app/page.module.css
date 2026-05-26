@@ -1,136 +1,121 @@
-/* Home2 — perros arriba, hero compacto, valores al final */
+/* Home activa: look Home1, perros entre hero y cajas */
 
 .page {
   width: 100%;
   overflow-x: clip;
-  --home-shell: 1120px;
-  --home-gutter: max(1rem, env(safe-area-inset-left));
-  --home-gutter-r: max(1rem, env(safe-area-inset-right));
 }
 
-/* —— Hero compacto —— */
 .hero {
-  padding: 1.1rem var(--home-gutter-r) 0.85rem var(--home-gutter);
-  background: linear-gradient(165deg, #ebe6de 0%, #faf8f5 55%, #faf8f5 100%);
-  border-bottom: 1px solid rgba(20, 31, 45, 0.06);
+  width: 100%;
+  padding: 2rem max(1rem, env(safe-area-inset-right)) 1.1rem max(1rem, env(safe-area-inset-left));
+  background: linear-gradient(180deg, #f0ebe3 0%, #fbfaf6 100%);
+  box-sizing: border-box;
 }
 
-.heroShell {
-  max-width: var(--home-shell);
-  margin-inline: auto;
+.inner {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.heroMain {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  gap: 1.2rem;
+  box-sizing: border-box;
 }
 
 .badge {
   align-self: flex-start;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #2f7f6d;
-  background: rgba(47, 132, 111, 0.1);
-  border: 1px solid rgba(47, 132, 111, 0.2);
+  background: rgba(47, 132, 111, 0.08);
+  border: 1px solid rgba(47, 132, 111, 0.18);
   border-radius: 999px;
-  padding: 0.3rem 0.65rem;
+  padding: 0.55rem 1rem;
+  line-height: 1.1;
 }
 
 .title {
-  margin: 0;
-  font-size: clamp(1.65rem, 5.5vw, 2.35rem);
+  width: 100%;
+  margin: 1.2rem 0 0.9rem;
+  font-size: clamp(2.75rem, 10.5vw, 4.3rem);
   font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.04em;
+  line-height: 0.98;
+  letter-spacing: -0.065em;
   color: #172033;
   text-wrap: balance;
 }
 
 .accent {
   color: #2f7f6d;
+  font-style: normal;
 }
 
 .lead {
-  margin: 0;
-  font-size: clamp(0.95rem, 2.8vw, 1.08rem);
-  line-height: 1.5;
-  color: #5f6877;
-  max-width: 36rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  font-size: clamp(1.15rem, 4.2vw, 1.45rem);
+  line-height: 1.48;
+  color: #4b5565;
 }
 
-.heroAside {
+.actions {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
 }
 
 .btnPrimary,
 .btnSecondary {
+  width: 100%;
+  min-height: 4rem;
+  border-radius: 1.25rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 1rem 1.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.85rem;
-  padding: 0.7rem 1.15rem;
-  border-radius: 999px;
-  font-size: 0.98rem;
-  font-weight: 700;
   text-decoration: none;
+  touch-action: manipulation;
   box-sizing: border-box;
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, #3d8b7a 0%, #2a7564 100%);
+  background: linear-gradient(135deg, #2f8a73 0%, #24715f 100%);
   color: #fff;
-  border: none;
-  box-shadow: 0 6px 18px rgba(42, 117, 100, 0.28);
+  border: 1px solid rgba(36, 113, 95, 0.4);
+  box-shadow: 0 14px 28px rgba(36, 113, 95, 0.24);
 }
 
 .btnSecondary {
-  background: #fff;
-  color: #1e293b;
-  border: 1px solid #e0dbd4;
-}
-
-.heroScroll {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.92);
   color: #2f7f6d;
-  text-decoration: none;
+  border: 1.5px solid rgba(47, 127, 109, 0.55);
+  box-shadow: 0 8px 20px rgba(20, 31, 45, 0.05);
 }
 
-.heroScroll:hover {
-  text-decoration: underline;
-}
-
-/* —— Perros (prioridad visual) —— */
+/* Perros: justo tras el hero */
 .dogsSection {
   width: 100%;
-  padding: 0.75rem var(--home-gutter-r) 1.5rem var(--home-gutter);
+  padding: 0.35rem max(1rem, env(safe-area-inset-right)) 1.75rem max(1rem, env(safe-area-inset-left));
   background: #faf8f5;
   box-sizing: border-box;
 }
 
 .dogsInner {
-  max-width: var(--home-shell);
-  margin-inline: auto;
-}
-
-.dogsHeader {
-  margin-bottom: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .dogsTitle {
-  margin: 0 0 0.25rem;
-  font-size: clamp(1.35rem, 3.5vw, 1.6rem);
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #172033;
@@ -138,8 +123,8 @@
 
 .dogsLead {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.45;
+  font-size: 1.05rem;
+  line-height: 1.5;
   color: #64748b;
   max-width: 40rem;
 }
@@ -152,129 +137,191 @@
   max-width: 38rem;
 }
 
-/* —— Valores (debajo del grid) —— */
-.values {
-  padding: 1.75rem var(--home-gutter-r) 2.5rem var(--home-gutter);
-  background: linear-gradient(180deg, #f0ebe3 0%, #f5f2eb 100%);
+.dogsHeader {
+  margin-bottom: 0.75rem;
+}
+
+/* Cajas informativas al final */
+.features {
+  width: 100%;
+  padding: 1.5rem max(1rem, env(safe-area-inset-right)) clamp(2.5rem, 8vw, 4rem) max(1rem, env(safe-area-inset-left));
+  background: linear-gradient(180deg, #f5f2eb 0%, #f0ebe3 100%);
   border-top: 1px solid rgba(20, 31, 45, 0.06);
+  box-sizing: border-box;
 }
 
-.valuesShell {
-  max-width: var(--home-shell);
-  margin-inline: auto;
-}
-
-.valuesKicker {
-  margin: 0 0 1rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #2f7f6d;
-}
-
-.valuesGrid {
+.featuresGrid {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.65rem;
+  gap: 0.85rem;
+  box-sizing: border-box;
 }
 
-.valueCard {
+.card {
+  width: 100%;
+  max-width: 100%;
   display: grid;
-  grid-template-columns: 2.5rem 1fr;
-  gap: 0.75rem;
-  align-items: start;
-  padding: 0.9rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
+  grid-template-columns: 4rem 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.05rem;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(20, 31, 45, 0.07);
-  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(20, 31, 45, 0.07);
+  box-sizing: border-box;
 }
 
-.valueIcon {
-  font-size: 1.35rem;
-  line-height: 1;
+.cardIcon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(47, 132, 111, 0.1);
+  color: #2f7f6d;
+  font-size: 1.75rem;
+  flex-shrink: 0;
 }
 
-.valueTitle {
-  margin: 0 0 0.2rem;
-  font-size: 0.98rem;
-  font-weight: 700;
+.cardTitle {
+  margin: 0 0 0.35rem;
+  font-size: 1.22rem;
+  line-height: 1.18;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   color: #172033;
 }
 
-.valueText {
+.cardText {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   line-height: 1.45;
-  color: #64748b;
+  color: #5f6877;
 }
 
-@media (min-width: 640px) {
-  .heroAside {
+@media (min-width: 1024px) {
+  .page {
+    --home-shell: 1120px;
+    --home-gutter: 1.5rem;
+  }
+
+  .hero {
+    padding: clamp(2rem, 5vw, 2.75rem) var(--home-gutter) 1rem;
+    background: linear-gradient(180deg, #f0ebe3 0%, #faf8f5 100%);
+  }
+
+  .inner {
+    width: 100%;
+    max-width: var(--home-shell);
+    margin-inline: auto;
+    gap: 1.1rem;
+    align-items: flex-start;
+  }
+
+  .badge {
+    font-size: 0.9rem;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .title {
+    width: 100%;
+    max-width: none;
+    font-size: clamp(2.5rem, 3.2vw, 3.15rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-top: 0;
+    margin-bottom: 0.65rem;
+  }
+
+  .title br {
+    display: none;
+  }
+
+  .lead {
+    width: 100%;
+    max-width: 52rem;
+    font-size: clamp(1.08rem, 1.35vw, 1.22rem);
+    line-height: 1.55;
+    color: #64748b;
+    margin-bottom: 0;
+  }
+
+  .actions {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.75rem;
+    width: auto;
+    margin-top: 0.5rem;
   }
 
   .btnPrimary,
   .btnSecondary {
     width: auto;
-    min-height: 2.5rem;
+    min-height: 2.75rem;
+    font-size: 1rem;
+    padding: 0.85rem 1.35rem;
+    border-radius: 999px;
   }
 
-  .heroScroll {
-    width: 100%;
-    justify-content: flex-start;
-    margin-top: 0.15rem;
+  .btnPrimary {
+    background: #3d8b7a;
+    box-shadow: 0 8px 24px rgba(61, 139, 122, 0.35);
   }
 
-  .valuesGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-  }
-
-  .valueCard {
-    display: block;
-    padding: 1rem;
-  }
-
-  .valueIcon {
-    display: block;
-    margin-bottom: 0.4rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .hero {
-    padding: 1.35rem var(--home-gutter-r) 1rem var(--home-gutter);
-  }
-
-  .heroShell {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 2rem;
-  }
-
-  .heroAside {
-    flex-direction: column;
-    align-items: stretch;
-    flex-shrink: 0;
-    min-width: 220px;
-  }
-
-  .heroScroll {
-    width: auto;
-    text-align: center;
-    margin-top: 0.25rem;
+  .btnSecondary {
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #e8e4df;
+    box-shadow: none;
   }
 
   .dogsSection {
-    padding-top: 1rem;
+    padding: 0.5rem var(--home-gutter) 2rem;
   }
 
-  .values {
-    padding-bottom: 3rem;
+  .dogsInner {
+    max-width: var(--home-shell);
+    margin-inline: auto;
+  }
+
+  .features {
+    padding: 2.5rem var(--home-gutter) clamp(2.5rem, 6vw, 3.5rem);
+  }
+
+  .featuresGrid {
+    width: 100%;
+    max-width: var(--home-shell);
+    margin-inline: auto;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+
+  .card {
+    display: block;
+    padding: clamp(1.35rem, 4.5vw, 1.65rem);
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8e4df;
+    box-shadow: 0 12px 40px rgba(30, 41, 59, 0.08);
+  }
+
+  .cardIcon {
+    display: none;
+  }
+
+  .cardTitle {
+    font-size: clamp(1.15rem, 1.8vw, 1.35rem);
+    margin-bottom: 0.65rem;
+  }
+
+  .cardText {
+    font-size: clamp(0.98rem, 1.4vw, 1.08rem);
+    color: #64748b;
   }
 }
