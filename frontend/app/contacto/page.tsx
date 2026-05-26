@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { checkLeadForDog, type AdopterLead } from "@/lib/adopter-leads";
 import { apiFetch } from "@/lib/api";
 import {
   type AdopterProfile,
@@ -12,6 +13,13 @@ import {
   resolveStoredAdopter,
   runMatchForDog,
 } from "@/lib/adopter-session";
+import { cancelAdopterLead } from "@/lib/adopter-leads";
+import {
+  canAdopterCancel,
+  leadStatusLabel,
+  leadStatusShort,
+  leadStatusTagClass,
+} from "@/lib/lead-status";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { whatsappUrl } from "@/lib/whatsapp";
 import styles from "./contacto.module.css";
@@ -32,14 +40,16 @@ function ContactoInner() {
   const adopterParam = sp.get("adopter");
   const scoreParam = sp.get("score");
 
-  const [phase, setPhase] = useState<"loading" | "form" | "done">("loading");
+  const [phase, setPhase] = useState<"loading" | "form" | "done" | "existing">("loading");
   const [profile, setProfile] = useState<AdopterProfile | null>(null);
   const [dogId, setDogId] = useState<number | null>(null);
   const [dog, setDog] = useState<DogSummary | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [existingLead, setExistingLead] = useState<AdopterLead | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +105,17 @@ function ContactoInner() {
         setDog({ name: `Perro #${dogNum}`, city: "", province: "", breed: "", main_image_url: null });
       }
 
+      try {
+        const check = await checkLeadForDog(adopter.id, adopter.email, dogNum);
+        if (check.exists && check.lead) {
+          setExistingLead(check.lead);
+          setPhase("existing");
+          return;
+        }
+      } catch {
+        /* seguir al formulario */
+      }
+
       let compat = scoreParam ? Number(scoreParam) : NaN;
       if (!Number.isFinite(compat)) {
         try {
@@ -139,13 +160,42 @@ function ContactoInner() {
       });
       setPhase("done");
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : "Error al enviar");
+      const msg = e2 instanceof Error ? e2.message : "Error al enviar";
+      if (msg.includes("solicitud activa") || msg.includes("409")) {
+        try {
+          const check = await checkLeadForDog(profile.id, profile.email, dogId);
+          if (check.lead) {
+            setExistingLead(check.lead);
+            setPhase("existing");
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      setErr(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const dogName = dog?.name || (dogId ? `Perro #${dogId}` : "");
+  const cancelExisting = async () => {
+    if (!profile || !existingLead) return;
+    if (!confirm(`¿Cancelar tu solicitud para ${existingLead.dog_name}? Podrás enviar una nueva después.`)) return;
+    setCancelling(true);
+    setErr(null);
+    try {
+      await cancelAdopterLead(existingLead.id, profile.id, profile.email);
+      setExistingLead(null);
+      setPhase("form");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo cancelar");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const dogName = dog?.name || existingLead?.dog_name || (dogId ? `Perro #${dogId}` : "");
   const messagePlaceholder = dogName
     ? `Cuéntales por qué te interesa a ${dogName}, tu disponibilidad para visita, etc.`
     : "Cuéntales por qué te interesa este perro, tu disponibilidad para visita, etc.";
@@ -172,12 +222,74 @@ function ContactoInner() {
           </p>
         ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" }}>
+          <Link href="/mis-solicitudes" className="btn btn-primary">
+            Mis solicitudes
+          </Link>
           <Link href="/perros" className="btn btn-secondary">
             Ver más perros
           </Link>
-          <Link href={`/resultados?adopter=${profile?.id}`} className="btn btn-primary">
+          <Link href={`/resultados?adopter=${profile?.id}`} className="btn btn-secondary">
             Mis matches
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "existing" && existingLead && profile) {
+    return (
+      <div className={`container ${styles.page}`}>
+        <h1 style={{ marginTop: 0 }}>Solicitud ya enviada</h1>
+        <p className={styles.lead}>
+          Ya tienes una solicitud activa para <strong>{existingLead.dog_name}</strong>. No hace falta enviarla de
+          nuevo; el refugio la tiene en su bandeja.
+        </p>
+
+        <div className={styles.dogCard} role="region" aria-label="Solicitud existente">
+          <div className={styles.dogPhoto}>
+            {existingLead.dog_main_image_url ? (
+              <Image
+                src={resolveMediaUrl(existingLead.dog_main_image_url)}
+                alt=""
+                fill
+                className={styles.dogPhotoImg}
+                sizes="72px"
+                unoptimized
+              />
+            ) : (
+              <div className={styles.dogPhotoEmpty} aria-hidden />
+            )}
+          </div>
+          <div className={styles.dogCardBody}>
+            <p className={styles.dogCardLabel}>Tu solicitud</p>
+            <p className={styles.dogCardName}>{existingLead.dog_name}</p>
+            <p className={styles.dogCardMeta}>{existingLead.shelter_name}</p>
+            <p style={{ margin: "0.5rem 0 0" }}>
+              <span className={leadStatusTagClass(existingLead.status)}>{leadStatusShort(existingLead.status)}</span>
+            </p>
+            <p style={{ margin: "0.35rem 0 0", fontSize: "0.88rem", color: "var(--muted)" }}>
+              {leadStatusLabel(existingLead.status)}
+            </p>
+            {existingLead.message ? (
+              <p style={{ margin: "0.5rem 0 0", fontSize: "0.88rem" }}>{existingLead.message}</p>
+            ) : null}
+          </div>
+        </div>
+
+        {err ? <p className="notice">{err}</p> : null}
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" }}>
+          <Link href="/mis-solicitudes" className="btn btn-primary">
+            Ver todas mis solicitudes
+          </Link>
+          <Link href={`/perros/${existingLead.dog_id}`} className="btn btn-secondary">
+            Ver ficha del perro
+          </Link>
+          {canAdopterCancel(existingLead.status) ? (
+            <button type="button" className="btn btn-secondary" disabled={cancelling} onClick={cancelExisting}>
+              {cancelling ? "Cancelando…" : "Cancelar solicitud"}
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -202,7 +314,7 @@ function ContactoInner() {
         {score !== null ? (
           <>
             {" "}
-            Compatibilidad orientativa con {dogName}: <strong>{score}%</strong>.
+            Compatibilidad orientativa con {dogName}: <strong>{Math.round(score)}%</strong>.
           </>
         ) : null}
       </p>
@@ -249,6 +361,8 @@ function ContactoInner() {
         </p>
         <p style={{ margin: "0.75rem 0 0", fontSize: "0.9rem" }}>
           <Link href={`/cuestionario?dog=${dogId}`}>Actualizar mi perfil</Link>
+          {" · "}
+          <Link href="/mis-solicitudes">Mis solicitudes</Link>
         </p>
       </div>
 

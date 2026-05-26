@@ -34,5 +34,21 @@ class LeadRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LeadAdopterRead(LeadRead):
+    dog_name: str = ""
+    dog_main_image_url: str | None = None
+    shelter_name: str = ""
+
+
+class LeadCheckResponse(BaseModel):
+    exists: bool
+    lead: LeadAdopterRead | None = None
+
+
+class AdopterLeadAuth(BaseModel):
+    adopter_profile_id: int
+    email: EmailStr
+
+
 class LeadStatusUpdate(BaseModel):
     status: LeadStatus

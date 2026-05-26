@@ -116,7 +116,7 @@ export default function PanelLeadsPage() {
                       onChange={(e) => patch(r.id, e.target.value)}
                       style={{ fontSize: "0.85rem", maxWidth: 130 }}
                     >
-                      {["new", "contacted", "in_process", "adopted", "rejected", "archived"].map((s) => (
+                      {["new", "contacted", "in_process", "adopted", "rejected", "archived", "cancelled"].map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>

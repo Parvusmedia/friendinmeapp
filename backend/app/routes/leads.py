@@ -1,7 +1,7 @@
 import csv
 import io
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -12,12 +12,77 @@ from app.models.enums import LeadStatus, UserRole
 from app.models.lead import AdoptionLead
 from app.models.shelter import Shelter
 from app.models.user import User
-from app.schemas.lead import LeadCreate, LeadRead, LeadStatusUpdate
+from app.schemas.lead import (
+    AdopterLeadAuth,
+    LeadAdopterRead,
+    LeadCheckResponse,
+    LeadCreate,
+    LeadRead,
+    LeadStatusUpdate,
+)
 from app.services.email_service import EmailService
+from app.services.lead_rules import (
+    ADOPTER_CANCELLABLE,
+    find_blocking_lead,
+    lead_to_adopter_dict,
+)
 from app.utils.dependencies import require_shelter_or_admin
 from app.utils.rate_limit import check_rate_limit
 
 router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+def _verify_adopter_access(db: Session, adopter_profile_id: int, email: str) -> AdopterProfile:
+    adopter = db.get(AdopterProfile, adopter_profile_id)
+    if not adopter:
+        raise HTTPException(status_code=404, detail="Perfil adoptante no encontrado")
+    if adopter.email.strip().lower() != email.strip().lower():
+        raise HTTPException(status_code=403, detail="No autorizado")
+    return adopter
+
+
+def _load_lead_adopter_read(db: Session, lead: AdoptionLead) -> LeadAdopterRead:
+    dog = db.get(Dog, lead.dog_id)
+    shelter = db.get(Shelter, lead.shelter_id)
+    if not dog or not shelter:
+        raise HTTPException(status_code=500, detail="Datos de solicitud inconsistentes")
+    return LeadAdopterRead.model_validate(lead_to_adopter_dict(lead, dog, shelter))
+
+
+@router.get("/check", response_model=LeadCheckResponse)
+def check_lead_for_dog(
+    adopter_profile_id: int = Query(..., ge=1),
+    dog_id: int = Query(..., ge=1),
+    email: str = Query(..., min_length=3),
+    db: Session = Depends(get_db),
+) -> LeadCheckResponse:
+    _verify_adopter_access(db, adopter_profile_id, email)
+    lead = find_blocking_lead(db, adopter_profile_id, dog_id)
+    if not lead:
+        return LeadCheckResponse(exists=False, lead=None)
+    return LeadCheckResponse(exists=True, lead=_load_lead_adopter_read(db, lead))
+
+
+@router.get("/adopter/{adopter_profile_id}", response_model=list[LeadAdopterRead])
+def list_adopter_leads(
+    adopter_profile_id: int,
+    email: str = Query(..., min_length=3),
+    db: Session = Depends(get_db),
+) -> list[LeadAdopterRead]:
+    _verify_adopter_access(db, adopter_profile_id, email)
+    rows = (
+        db.query(AdoptionLead)
+        .filter(AdoptionLead.adopter_profile_id == adopter_profile_id)
+        .order_by(AdoptionLead.created_at.desc())
+        .all()
+    )
+    out: list[LeadAdopterRead] = []
+    for lead in rows:
+        dog = db.get(Dog, lead.dog_id)
+        shelter = db.get(Shelter, lead.shelter_id)
+        if dog and shelter:
+            out.append(LeadAdopterRead.model_validate(lead_to_adopter_dict(lead, dog, shelter)))
+    return out
 
 
 @router.post("", response_model=LeadRead, status_code=status.HTTP_201_CREATED)
@@ -32,12 +97,21 @@ def create_lead(payload: LeadCreate, request: Request, db: Session = Depends(get
     adopter = db.get(AdopterProfile, payload.adopter_profile_id)
     if not adopter or not adopter.consent_contact:
         raise HTTPException(status_code=400, detail="Consentimiento de contacto no válido")
+    if adopter.email.strip().lower() != payload.email.strip().lower():
+        raise HTTPException(status_code=403, detail="El email no coincide con tu perfil")
     dog = db.get(Dog, payload.dog_id)
     if not dog:
         raise HTTPException(status_code=404, detail="Perro no encontrado")
     shelter = db.get(Shelter, dog.shelter_id)
     if not shelter:
         raise HTTPException(status_code=500, detail="Refugio inconsistente")
+
+    existing = find_blocking_lead(db, payload.adopter_profile_id, payload.dog_id)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Ya tienes una solicitud activa para este perro. Consulta «Mis solicitudes».",
+        )
 
     lead = AdoptionLead(
         adopter_profile_id=payload.adopter_profile_id,
@@ -129,6 +203,27 @@ def export_leads_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=leads.csv"},
     )
+
+
+@router.post("/{lead_id}/cancel", response_model=LeadAdopterRead)
+def cancel_lead_by_adopter(
+    lead_id: int,
+    payload: AdopterLeadAuth,
+    db: Session = Depends(get_db),
+) -> LeadAdopterRead:
+    _verify_adopter_access(db, payload.adopter_profile_id, payload.email)
+    lead = db.get(AdoptionLead, lead_id)
+    if not lead or lead.adopter_profile_id != payload.adopter_profile_id:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    if lead.status not in ADOPTER_CANCELLABLE:
+        raise HTTPException(
+            status_code=400,
+            detail="Esta solicitud ya no puede cancelarse desde tu cuenta",
+        )
+    lead.status = LeadStatus.cancelled
+    db.commit()
+    db.refresh(lead)
+    return _load_lead_adopter_read(db, lead)
 
 
 @router.get("/{lead_id}", response_model=LeadRead)

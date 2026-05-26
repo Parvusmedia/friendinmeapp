@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { hasValidSession } from "@/lib/auth";
+import { getStoredAdopterId } from "@/lib/adopter-session";
 
 const navLinks = [
   { href: "/#perros", label: "Perros" },
@@ -16,9 +17,11 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [panelHref, setPanelHref] = useState("/panel/login");
+  const [hasAdopter, setHasAdopter] = useState(false);
 
   useEffect(() => {
     setPanelHref(hasValidSession() ? "/panel/dashboard" : "/panel/login");
+    setHasAdopter(Boolean(getStoredAdopterId()));
   }, [pathname]);
 
   useEffect(() => {
@@ -74,6 +77,11 @@ export function SiteHeader() {
               {l.label}
             </Link>
           ))}
+          {hasAdopter ? (
+            <Link href="/mis-solicitudes" className="site-nav-link">
+              Mis solicitudes
+            </Link>
+          ) : null}
           <Link href={panelHref} className="btn btn-secondary site-nav-panel-btn">
             <span aria-hidden>👤</span> Panel
           </Link>
@@ -102,6 +110,11 @@ export function SiteHeader() {
                 {l.label}
               </Link>
             ))}
+            {hasAdopter ? (
+              <Link href="/mis-solicitudes" className="site-nav-mobile-link">
+                Mis solicitudes
+              </Link>
+            ) : null}
             <Link href={panelHref} className="btn btn-primary site-nav-mobile-panel">
               Ir al panel
             </Link>

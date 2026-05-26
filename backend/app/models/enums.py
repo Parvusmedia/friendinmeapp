@@ -87,6 +87,7 @@ class LeadStatus(str, enum.Enum):
     adopted = "adopted"
     rejected = "rejected"
     archived = "archived"
+    cancelled = "cancelled"
 
 
 class MatchLevel(str, enum.Enum):
