@@ -7,7 +7,8 @@ import { hasValidSession } from "@/lib/auth";
 
 const navLinks = [
   { href: "/#perros", label: "Perros" },
-  { href: "/cuestionario", label: "Match" },
+  { href: "/#como-funciona", label: "Cómo funciona" },
+  { href: "/refugio/solicitud", label: "Refugios" },
   { href: "/privacidad", label: "Privacidad" },
 ];
 
@@ -48,6 +49,9 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="container site-header-inner">
         <Link href="/" className="site-logo" onClick={() => setOpen(false)}>
+          <span className="site-logo-mark" aria-hidden>
+            🐾
+          </span>
           FriendInMe
         </Link>
 
@@ -71,7 +75,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link href={panelHref} className="btn btn-secondary site-nav-panel-btn">
-            Panel
+            <span aria-hidden>👤</span> Panel
           </Link>
         </nav>
       </div>

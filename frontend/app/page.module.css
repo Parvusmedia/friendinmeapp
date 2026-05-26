@@ -1,132 +1,352 @@
-/* Home activa: look Home1, perros entre hero y cajas */
+/* Home mockup — hero 2 col, cómo funciona, perros, CTA refugio */
 
 .page {
   width: 100%;
   overflow-x: clip;
+  --home-shell: 1180px;
+  --home-gutter: max(1rem, env(safe-area-inset-left));
+  --home-gutter-r: max(1rem, env(safe-area-inset-right));
+  --green: #2d6b5c;
+  --green-dark: #1f4f44;
+  --cream: #f5f0e8;
+  --coral: #e8a87c;
 }
 
+/* —— Hero —— */
 .hero {
-  width: 100%;
-  padding: 2rem max(1rem, env(safe-area-inset-right)) 1.1rem max(1rem, env(safe-area-inset-left));
-  background: linear-gradient(180deg, #f0ebe3 0%, #fbfaf6 100%);
-  box-sizing: border-box;
+  padding: 1.5rem var(--home-gutter-r) 2rem var(--home-gutter);
+  background: linear-gradient(165deg, #ebe6de 0%, #faf8f5 45%, #fff 100%);
 }
 
-.inner {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
+.heroGrid {
+  max-width: var(--home-shell);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.heroCopy {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  box-sizing: border-box;
+  gap: 1rem;
 }
 
 .badge {
   align-self: flex-start;
   margin: 0;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #2f7f6d;
-  background: rgba(47, 132, 111, 0.08);
-  border: 1px solid rgba(47, 132, 111, 0.18);
+  color: var(--green);
+  background: rgba(45, 107, 92, 0.1);
+  border: 1px solid rgba(45, 107, 92, 0.2);
   border-radius: 999px;
-  padding: 0.55rem 1rem;
-  line-height: 1.1;
+  padding: 0.4rem 0.85rem;
 }
 
 .title {
-  width: 100%;
-  margin: 1.2rem 0 0.9rem;
-  font-size: clamp(2.75rem, 10.5vw, 4.3rem);
+  margin: 0;
+  font-size: clamp(1.85rem, 5.5vw, 2.75rem);
   font-weight: 800;
-  line-height: 0.98;
-  letter-spacing: -0.065em;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
   color: #172033;
   text-wrap: balance;
 }
 
 .accent {
-  color: #2f7f6d;
-  font-style: normal;
+  color: var(--green);
+  display: block;
+  margin-top: 0.15em;
 }
 
 .lead {
-  width: 100%;
-  margin: 0 0 1rem;
-  font-size: clamp(1.15rem, 4.2vw, 1.45rem);
-  line-height: 1.48;
-  color: #4b5565;
+  margin: 0;
+  font-size: clamp(1rem, 2.5vw, 1.12rem);
+  line-height: 1.55;
+  color: #5f6877;
+  max-width: 34rem;
 }
 
 .actions {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  margin-top: 0.25rem;
+  gap: 0.65rem;
 }
 
 .btnPrimary,
 .btnSecondary {
-  width: 100%;
-  min-height: 4rem;
-  border-radius: 1.25rem;
-  font-size: 1.08rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  padding: 1rem 1.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
   text-decoration: none;
-  touch-action: manipulation;
   box-sizing: border-box;
 }
 
 .btnPrimary {
-  background: linear-gradient(135deg, #2f8a73 0%, #24715f 100%);
+  background: linear-gradient(135deg, #3d8b7a 0%, var(--green-dark) 100%);
   color: #fff;
-  border: 1px solid rgba(36, 113, 95, 0.4);
-  box-shadow: 0 14px 28px rgba(36, 113, 95, 0.24);
+  border: none;
+  box-shadow: 0 8px 22px rgba(31, 79, 68, 0.28);
 }
 
 .btnSecondary {
-  background: rgba(255, 255, 255, 0.92);
-  color: #2f7f6d;
-  border: 1.5px solid rgba(47, 127, 109, 0.55);
-  box-shadow: 0 8px 20px rgba(20, 31, 45, 0.05);
+  background: #fff;
+  color: #1e293b;
+  border: 1.5px solid #d4cfc6;
 }
 
-/* Perros: justo tras el hero */
+.trustList {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.trustList li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.trustList span:first-child {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Featured card */
+.featuredCard,
+.featuredPlaceholder {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #e8e4df;
+  box-shadow: 0 16px 48px rgba(30, 41, 59, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.featuredPlaceholder {
+  min-height: 320px;
+  background: #f0ebe3;
+}
+
+.featuredBadge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--coral);
+  color: #5c3d1e;
+  box-shadow: 0 4px 12px rgba(232, 168, 124, 0.45);
+}
+
+.featuredBody {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.featuredHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.featuredName {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #172033;
+}
+
+.featuredLoc {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.featuredScoreCta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--green);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.featuredScoreCta:hover {
+  text-decoration: underline;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #f0ebe3;
+  color: #4b5565;
+}
+
+.featuredActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.featuredLink {
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.featuredLink:hover {
+  color: var(--green);
+}
+
+.featuredMatchBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+/* —— Cómo funciona —— */
+.howSection {
+  padding: 2.5rem var(--home-gutter-r) 2.5rem var(--home-gutter);
+  background: #fff;
+}
+
+.howShell {
+  max-width: var(--home-shell);
+  margin-inline: auto;
+}
+
+.howTitle {
+  margin: 0 0 2rem;
+  text-align: center;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #172033;
+}
+
+.howSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.howStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: var(--cream);
+  border: 1px solid #ebe6de;
+}
+
+.howIcon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 14px rgba(30, 41, 59, 0.06);
+}
+
+.howStepTitle {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #172033;
+}
+
+.howStepText {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.howArrow {
+  display: none;
+}
+
+/* —— Perros —— */
 .dogsSection {
-  width: 100%;
-  padding: 0.35rem max(1rem, env(safe-area-inset-right)) 1.75rem max(1rem, env(safe-area-inset-left));
+  padding: 2rem var(--home-gutter-r) 2.5rem var(--home-gutter);
   background: #faf8f5;
-  box-sizing: border-box;
 }
 
 .dogsInner {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  box-sizing: border-box;
+  max-width: var(--home-shell);
+  margin-inline: auto;
+}
+
+.dogsHeader {
+  margin-bottom: 1.25rem;
+  text-align: center;
 }
 
 .dogsTitle {
   margin: 0 0 0.5rem;
-  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-size: clamp(1.45rem, 3.5vw, 1.85rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #172033;
 }
 
 .dogsLead {
-  margin: 0;
-  font-size: 1.05rem;
+  margin: 0 auto;
+  font-size: 1rem;
   line-height: 1.5;
   color: #64748b;
-  max-width: 40rem;
+  max-width: 36rem;
 }
 
 .dogsLeadCompact {
@@ -134,194 +354,128 @@
   font-size: 0.92rem;
   line-height: 1.45;
   color: #64748b;
-  max-width: 38rem;
 }
 
-.dogsHeader {
-  margin-bottom: 0.75rem;
+/* —— CTA refugio —— */
+.shelterCta {
+  padding: 0 var(--home-gutter-r) 3rem var(--home-gutter);
+  background: #faf8f5;
 }
 
-/* Cajas informativas al final */
-.features {
-  width: 100%;
-  padding: 1.5rem max(1rem, env(safe-area-inset-right)) clamp(2.5rem, 8vw, 4rem) max(1rem, env(safe-area-inset-left));
-  background: linear-gradient(180deg, #f5f2eb 0%, #f0ebe3 100%);
-  border-top: 1px solid rgba(20, 31, 45, 0.06);
-  box-sizing: border-box;
-}
-
-.featuresGrid {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
+.shelterCtaShell {
+  max-width: var(--home-shell);
+  margin-inline: auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.85rem;
-  box-sizing: border-box;
-}
-
-.card {
-  width: 100%;
-  max-width: 100%;
-  display: grid;
-  grid-template-columns: 4rem 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: center;
-  padding: 1.05rem;
-  border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(20, 31, 45, 0.07);
-  box-shadow: 0 10px 26px rgba(20, 31, 45, 0.07);
-  box-sizing: border-box;
+  padding: 1.75rem 1.5rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f0ebe3 0%, #ebe4d8 100%);
+  border: 1px solid #e0d9ce;
 }
 
-.cardIcon {
-  width: 4rem;
-  height: 4rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(47, 132, 111, 0.1);
-  color: #2f7f6d;
-  font-size: 1.75rem;
-  flex-shrink: 0;
+.shelterCtaIcon {
+  font-size: 2.5rem;
+  text-align: center;
 }
 
-.cardTitle {
-  margin: 0 0 0.35rem;
-  font-size: 1.22rem;
-  line-height: 1.18;
+.shelterCtaTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  letter-spacing: -0.025em;
   color: #172033;
 }
 
-.cardText {
-  margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.45;
+.shelterCtaText {
+  margin: 0 0 1rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
   color: #5f6877;
+  max-width: 28rem;
 }
 
-@media (min-width: 1024px) {
-  .page {
-    --home-shell: 1120px;
-    --home-gutter: 1.5rem;
-  }
+.shelterCtaBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.15rem;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(45, 107, 92, 0.25);
+}
 
-  .hero {
-    padding: clamp(2rem, 5vw, 2.75rem) var(--home-gutter) 1rem;
-    background: linear-gradient(180deg, #f0ebe3 0%, #faf8f5 100%);
-  }
+.shelterCtaVisual {
+  display: none;
+  font-size: 5rem;
+  text-align: center;
+  line-height: 1;
+}
 
-  .inner {
-    width: 100%;
-    max-width: var(--home-shell);
-    margin-inline: auto;
-    gap: 1.1rem;
-    align-items: flex-start;
-  }
-
-  .badge {
-    font-size: 0.9rem;
-    padding: 0.35rem 0.75rem;
-  }
-
-  .title {
-    width: 100%;
-    max-width: none;
-    font-size: clamp(2.5rem, 3.2vw, 3.15rem);
-    line-height: 1.08;
-    letter-spacing: -0.03em;
-    margin-top: 0;
-    margin-bottom: 0.65rem;
-  }
-
-  .title br {
-    display: none;
-  }
-
-  .lead {
-    width: 100%;
-    max-width: 52rem;
-    font-size: clamp(1.08rem, 1.35vw, 1.22rem);
-    line-height: 1.55;
-    color: #64748b;
-    margin-bottom: 0;
+@media (min-width: 768px) {
+  .heroGrid {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2rem;
   }
 
   .actions {
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    width: auto;
-    margin-top: 0.5rem;
   }
 
   .btnPrimary,
   .btnSecondary {
     width: auto;
-    min-height: 2.75rem;
-    font-size: 1rem;
-    padding: 0.85rem 1.35rem;
-    border-radius: 999px;
   }
 
-  .btnPrimary {
-    background: #3d8b7a;
-    box-shadow: 0 8px 24px rgba(61, 139, 122, 0.35);
-  }
-
-  .btnSecondary {
-    background: #fff;
-    color: #1e293b;
-    border: 1px solid #e8e4df;
-    box-shadow: none;
-  }
-
-  .dogsSection {
-    padding: 0.5rem var(--home-gutter) 2rem;
-  }
-
-  .dogsInner {
-    max-width: var(--home-shell);
-    margin-inline: auto;
-  }
-
-  .features {
-    padding: 2.5rem var(--home-gutter) clamp(2.5rem, 6vw, 3.5rem);
-  }
-
-  .featuresGrid {
-    width: 100%;
-    max-width: var(--home-shell);
-    margin-inline: auto;
+  .howSteps {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
-  .card {
+  .howStep {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .howIcon {
+    margin: 0 auto 0.5rem;
+  }
+
+  .howArrow {
     display: block;
-    padding: clamp(1.35rem, 4.5vw, 1.65rem);
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #e8e4df;
-    box-shadow: 0 12px 40px rgba(30, 41, 59, 0.08);
+    position: absolute;
+    right: -0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #c4bdb2;
+    font-size: 1.25rem;
+    font-weight: 700;
   }
 
-  .cardIcon {
+  .howStep:last-child .howArrow {
     display: none;
   }
 
-  .cardTitle {
-    font-size: clamp(1.15rem, 1.8vw, 1.35rem);
-    margin-bottom: 0.65rem;
+  .shelterCtaShell {
+    grid-template-columns: auto 1fr auto;
+    padding: 2rem 2.25rem;
   }
 
-  .cardText {
-    font-size: clamp(0.98rem, 1.4vw, 1.08rem);
-    color: #64748b;
+  .shelterCtaVisual {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dogsHeader {
+    text-align: left;
+  }
+
+  .dogsLead {
+    margin-inline: 0;
   }
 }

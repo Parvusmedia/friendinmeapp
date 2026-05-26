@@ -6,21 +6,26 @@ type Styles = typeof defaultStyles;
 type Props = {
   /** Permite usar estilos de Home1 en /home1 */
   moduleStyles?: Styles;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "home";
 };
 
 export function HomeDogsSection({ moduleStyles = defaultStyles, variant = "default" }: Props) {
   const styles = moduleStyles;
   const compact = variant === "compact";
+  const isHome = variant === "home";
 
   return (
     <section className={styles.dogsSection} aria-labelledby="home-dogs-heading" id="perros">
       <div className={styles.dogsInner}>
         <div className={styles.dogsHeader}>
           <h2 id="home-dogs-heading" className={styles.dogsTitle}>
-            Perros en adopción
+            {isHome ? "Perros que podrían encajar contigo" : "Perros en adopción"}
           </h2>
-          {compact ? (
+          {isHome ? (
+            <p className={styles.dogsLead}>
+              Filtra por lo básico. El porcentaje de compatibilidad aparece tras completar el cuestionario.
+            </p>
+          ) : compact ? (
             <p className={styles.dogsLeadCompact}>
               Filtra y explora fichas reales. El match orientativo está en el cuestionario.
             </p>
@@ -30,7 +35,7 @@ export function HomeDogsSection({ moduleStyles = defaultStyles, variant = "defau
             </p>
           )}
         </div>
-        <PublicDogsListing compact={compact} />
+        <PublicDogsListing compact={compact} variant={isHome ? "home" : "default"} />
       </div>
     </section>
   );

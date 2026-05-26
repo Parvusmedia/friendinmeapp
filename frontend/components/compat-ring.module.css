@@ -1,0 +1,45 @@
+.ring {
+  --ring-size: 56px;
+  --inner-size: 44px;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#3d8b7a calc(var(--pct, 0) * 1%), #e8e4df 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ringSm {
+  --ring-size: 44px;
+  --inner-size: 34px;
+}
+
+.inner {
+  width: var(--inner-size);
+  height: var(--inner-size);
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  box-shadow: 0 1px 4px rgba(20, 31, 45, 0.08);
+}
+
+.inner strong {
+  font-size: 0.72rem;
+  color: #172033;
+}
+
+.inner small {
+  font-size: 0.55rem;
+  color: #64748b;
+  text-transform: lowercase;
+}
+
+.ringSm .inner strong {
+  font-size: 0.65rem;
+}
