@@ -155,24 +155,95 @@
 }
 
 .summaryBody h3 {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.65rem;
   font-size: 1rem;
   font-weight: 800;
   color: #172033;
 }
 
-.summaryBody p {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.55;
+.summaryScorePill {
+  display: inline-block;
+  margin: 0 0 0.65rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e4d42;
+  background: #fff;
+  border: 1px solid rgba(45, 107, 92, 0.25);
+  border-radius: 999px;
+}
+
+.summaryIntro {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
   color: #334155;
 }
 
+.summaryBlock {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+}
+
+.summaryBlock:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.summaryBlockTitle {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #172033;
+}
+
+.summaryBlockGood .summaryBlockTitle {
+  color: #2d6b5c;
+}
+
+.summaryBlockWarn .summaryBlockTitle {
+  color: #b45309;
+}
+
+.summaryBlockAlert .summaryBlockTitle {
+  color: #c45c5c;
+}
+
+.summaryList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.summaryList li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.summaryListIcon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
+  line-height: 1.45;
+}
+
 .summaryDisclaimer {
-  margin-top: 0.5rem !important;
-  font-size: 0.82rem !important;
-  color: #2d6b5c !important;
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(45, 107, 92, 0.15);
+  font-size: 0.82rem;
+  color: #2d6b5c;
   font-weight: 600;
+  line-height: 1.45;
 }
 
 .twoCol {

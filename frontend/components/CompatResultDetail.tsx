@@ -8,6 +8,7 @@ import {
   matchLevelHeadline,
   matchLevelLabel,
 } from "@/lib/match-labels";
+import { buildQuickSummary } from "@/lib/match-summary";
 import { resolveMediaUrl } from "@/lib/media-url";
 import styles from "./compat-result-detail.module.css";
 
@@ -45,15 +46,13 @@ export function CompatResultDetail({
   matchLevel,
   reasons,
   warnings,
-  aiExplanation,
+  aiExplanation: _aiExplanation,
   breakdown,
   adopterId,
 }: Props) {
   const pct = Math.round(score);
   const levelLabel = matchLevelLabel(matchLevel);
-  const summaryText =
-    aiExplanation?.trim() ||
-    matchLevelHeadline(matchLevel, dog.name);
+  const summary = buildQuickSummary(dog.name, score, matchLevel, reasons, warnings);
 
   const contactHref = `/contacto?dog=${dog.id}&adopter=${adopterId}&score=${pct}`;
 
@@ -101,7 +100,57 @@ export function CompatResultDetail({
         </div>
         <div className={styles.summaryBody}>
           <h3 id="resumen-rapido">Resumen rápido</h3>
-          <p>{summaryText}</p>
+          <p className={styles.summaryScorePill}>{summary.scoreLine}</p>
+          <p className={styles.summaryIntro}>{summary.intro}</p>
+
+          {summary.positives.length > 0 ? (
+            <div className={`${styles.summaryBlock} ${styles.summaryBlockGood}`}>
+              <p className={styles.summaryBlockTitle}>✅ Lo que encaja bien</p>
+              <ul className={styles.summaryList}>
+                {summary.positives.map((item, i) => (
+                  <li key={i}>
+                    <span className={styles.summaryListIcon} aria-hidden>
+                      ✓
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {summary.infoGaps.length > 0 ? (
+            <div className={`${styles.summaryBlock} ${styles.summaryBlockWarn}`}>
+              <p className={styles.summaryBlockTitle}>🔍 Confirmar con el refugio</p>
+              <ul className={styles.summaryList}>
+                {summary.infoGaps.map((item, i) => (
+                  <li key={i}>
+                    <span className={styles.summaryListIcon} aria-hidden>
+                      ?
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {summary.otherWarnings.length > 0 ? (
+            <div className={`${styles.summaryBlock} ${styles.summaryBlockAlert}`}>
+              <p className={styles.summaryBlockTitle}>⚠️ Otras consideraciones</p>
+              <ul className={styles.summaryList}>
+                {summary.otherWarnings.map((item, i) => (
+                  <li key={i}>
+                    <span className={styles.summaryListIcon} aria-hidden>
+                      !
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <p className={styles.summaryDisclaimer}>Es una guía orientativa, no una garantía.</p>
         </div>
       </section>
