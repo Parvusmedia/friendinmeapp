@@ -330,13 +330,17 @@ function PanelPerroEditarInner() {
       <form className="card" style={{ padding: "1.5rem" }} onSubmit={saveData}>
         <h2 style={{ marginTop: 0, fontSize: "1.1rem" }}>Datos del perro</h2>
         <div className="field">
-          <label>Estado</label>
+          <label>Estado de adopción</label>
           <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
-            <option value="available">Disponible</option>
-            <option value="reserved">Reservado</option>
-            <option value="adopted">Adoptado</option>
-            <option value="hidden">Oculto</option>
+            <option value="available">Disponible — publicado en la web</option>
+            <option value="reserved">Reservado — no publicado</option>
+            <option value="adopted">Adoptado — no publicado</option>
+            <option value="hidden">Oculto — no publicado</option>
           </select>
+          <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+            Solo el estado <strong>Disponible</strong> muestra el perro en el listado público y en las búsquedas de
+            adoptantes.
+          </p>
         </div>
         <div className="field">
           <label>Nombre</label>
