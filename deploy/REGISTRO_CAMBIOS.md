@@ -4,6 +4,7 @@ Documento operativo para soporte, incidencias y despliegues. **Incluido en cada 
 
 **Producción:** https://friendinme.pmediaplus.com  
 **Ruta proyecto:** `/opt/apps/friendinme`  
+**GitHub:** https://github.com/Parvusmedia/friendinmeapp (`main`)  
 **Servicios:** `friendinme-api` (puerto 8000), `friendinme-web` (puerto 3010)
 
 ---
@@ -24,24 +25,33 @@ Luego ejecutar backup (o esperar al cron):
 PGPASSWORD=... /opt/apps/friendinme/deploy/backup_friendinme.sh
 ```
 
-**Despliegue típico frontend + API:**
+**Despliegue típico (automático):**
 
 ```bash
-cd /opt/apps/friendinme/frontend && npm run build
-sudo systemctl restart friendinme-api friendinme-web
+cd /opt/apps/friendinme
+git add … && git commit -m "…" && git push origin main
+# → GitHub Actions "Deploy FriendInMe" (~40 s)
 ```
+
+**Despliegue manual** (emergencia o solo en VPS):
+
+```bash
+/opt/apps/friendinme/scripts/deploy.sh
+# o: cd frontend && npm run build && sudo systemctl restart friendinme-api friendinme-web
+```
+
+Instrucciones: `deploy/GITHUB.md`, `deploy/BACKUP.md`.
 
 ---
 
 ## Historial
 
 <!-- Las entradas nuevas se insertan debajo de esta línea (más reciente primero) -->
-### 2026-05-21 — Registro de cambios y backup ampliado
 
-- **Qué:** Fichero deploy/REGISTRO_CAMBIOS.md, scripts registrar_cambio.sh y backup_friendinme.sh. README y BACKUP.md actualizados.
-- **Despliegue:** (completar si aplica)
+### 2026-05-25 — GitHub, CI/CD y mejoras de producto
 
-
+- **Qué:** Repo `Parvusmedia/friendinmeapp`. Deploy automático con GitHub Actions (secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`). CI: pytest + build. Claves SSH: `github_friendinme_ed25519` (git) y `gh_actions_friendinme_ed25519` (Actions). Mejoras: rate limit, magic link resultados, match breakdown, WhatsApp contacto, export CSV adoptantes, stats panel, SEO sitemap, `next/image` en fotos.
+- **Despliegue:** `git push origin main` → workflow Deploy OK (~36 s). Docs: `deploy/GITHUB.md`, `deploy/BACKUP.md`.
 
 ### 2026-05-21 — Registro de cambios y backup ampliado
 
@@ -88,7 +98,8 @@ sudo systemctl restart friendinme-api friendinme-web
 
 | Síntoma | Comprobar |
 |--------|-----------|
-| Application error en web | ¿`npm run build` + restart `friendinme-web`? Consola F12. |
+| Deploy Actions falla | Secrets en repo correcto; `DEPLOY_SSH_KEY` = privada `gh_actions_*`; ver `deploy/GITHUB.md`. No usar "Re-run" en runs previos a secrets. |
+| Application error en web | ¿Último Actions verde? ¿`npm run build` + restart `friendinme-web`? Consola F12. |
 | 404 en `/panel/perros/123` | Build antiguo sin ruta dinámica — rebuild + restart. |
 | API 502 / health | `systemctl status friendinme-api`, `curl 127.0.0.1:8000/health` |
 | Fotos no se ven | `UPLOAD_DIR`, nginx `location /media/`, permisos `cursorbot` |

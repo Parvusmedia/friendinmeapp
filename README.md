@@ -2,11 +2,14 @@
 
 Plataforma de adopción responsable: cuestionario de compatibilidad, match orientativo e integración con refugios.
 
+**Producción:** https://friendinme.pmediaplus.com  
+**Repositorio:** https://github.com/Parvusmedia/friendinmeapp
+
 ## Estructura
 
 - `backend/` — FastAPI + PostgreSQL + Alembic
 - `frontend/` — Next.js 14
-- `deploy/` — systemd, nginx, documentación de despliegue
+- `deploy/` — systemd, nginx, backup, GitHub/Actions
 - `scripts/deploy.sh` — despliegue manual en el VPS
 
 ## Desarrollo local
@@ -25,15 +28,25 @@ cd frontend && npm ci && npm run dev
 
 Tests: `cd backend && .venv/bin/python -m pytest tests -q`
 
-## Git y CI
+## Git, CI y despliegue
 
-- **CI** (`.github/workflows/ci.yml`): pytest + `npm run build` en cada push/PR a `main`.
-- **Deploy** (`.github/workflows/deploy.yml`): SSH al VPS tras push a `main` (requiere secrets en GitHub).
+| Workflow | Cuándo |
+|----------|--------|
+| **CI** (`.github/workflows/ci.yml`) | Push/PR a `main` — pytest + build |
+| **Deploy** (`.github/workflows/deploy.yml`) | Push a `main` — despliega en VPS |
 
-Configuración paso a paso: [deploy/GITHUB.md](deploy/GITHUB.md)
+```bash
+git push origin main   # despliega automáticamente (~40 s)
+```
 
-## Producción
+Documentación operativa:
 
-Dominio: https://friendinme.pmediaplus.com
+- [deploy/GITHUB.md](deploy/GITHUB.md) — repo, secrets, claves SSH, SMTP
+- [deploy/BACKUP.md](deploy/BACKUP.md) — backup, registro de cambios, despliegue manual
+- [deploy/REGISTRO_CAMBIOS.md](deploy/REGISTRO_CAMBIOS.md) — historial e incidencias
 
-Servicios: `friendinme-api` (8000), `friendinme-web` (3010).
+## Producción (VPS)
+
+- **Ruta:** `/opt/apps/friendinme`
+- **Servicios:** `friendinme-api` (8000), `friendinme-web` (3010)
+- **Secretos:** `backend/.env` (no en git); GitHub Actions: `DEPLOY_*` en el repo

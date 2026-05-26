@@ -1,5 +1,7 @@
 # Despliegue: friendinme.pmediaplus.com
 
+**Código y updates:** repo https://github.com/Parvusmedia/friendinmeapp — despliegue automático con GitHub Actions tras `git push` a `main`. Ver [GITHUB.md](./GITHUB.md) y [BACKUP.md](./BACKUP.md).
+
 ## Tus dos VPS (referencia)
 
 | Rol | IP | Uso |

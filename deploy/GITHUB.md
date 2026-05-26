@@ -1,101 +1,147 @@
-# Despliegue automático con GitHub
+# GitHub y despliegue automático
 
-Objetivo: **hacer `git push` a `main` y que el VPS actualice código y reinicie servicios**, sin entrar en SSH para cada cambio.
+**Repositorio:** https://github.com/Parvusmedia/friendinmeapp  
+**Rama de producción:** `main`  
+**Producción:** https://friendinme.pmediaplus.com  
+**Código en VPS:** `/opt/apps/friendinme`
 
-El archivo **`.env` con secretos no va al repositorio** (está en `.gitignore`). En el servidor se crea **una sola vez** a mano o con los valores que ya tengas; los despliegues posteriores solo hacen `git pull` + build + restart.
+Objetivo: **`git push` a `main` → GitHub Actions despliega en el VPS** (~40 s): pull, tests, migraciones, build Next.js, restart de servicios.
 
-## 1. Repositorio en GitHub
+El **`.env` del backend no va al repo** (`.gitignore`). Los cambios de secretos en servidor se hacen solo en `/opt/apps/friendinme/backend/.env` (SMTP, JWT, BD, etc.).
 
-```bash
-cd /opt/apps/friendinme
-git init
-git remote add origin git@github.com:Parvusmedia/friendinmeapp.git
-git add -A
-git status   # comprueba que NO aparece backend/.env
-git commit -m "FriendInMe MVP"
-git branch -M main
-git push -u origin main
+---
+
+## Flujo habitual (ya configurado)
+
+```text
+Editar código → commit → git push origin main
+    → Workflow "Deploy FriendInMe" (Actions)
+    → SSH al VPS → git reset --hard origin/main → pytest → alembic → npm build → systemctl restart
 ```
 
-Si `backend/.env` aparece en `git status`, **no lo subas**: debe seguir ignorado.
+- **CI** (`.github/workflows/ci.yml`): pytest + `npm run build` en push/PR (no despliega).
+- **Deploy** (`.github/workflows/deploy.yml`): solo en push a `main` (y manual *Run workflow*).
 
-## 2. Clave SSH para GitHub → VPS
+Comprobar despliegues: https://github.com/Parvusmedia/friendinmeapp/actions
 
-En el **VPS** (como `cursorbot`):
+**No uses** “Re-run failed jobs” en runs que fallaron antes de configurar secrets; usa **Run workflow** en el workflow más reciente.
 
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/github_friendinme_deploy -N ""
-cat ~/.ssh/github_friendinme_deploy.pub >> ~/.ssh/authorized_keys
+---
+
+## Dos claves SSH (no mezclar)
+
+| Dirección | Archivo en VPS | Dónde se registra |
+|-----------|----------------|-------------------|
+| **VPS → GitHub** (`git push` / `git pull`) | `~/.ssh/github_friendinme_ed25519` | Repo → **Settings → Deploy keys** (clave `.pub`, con *Allow write access*) |
+| **GitHub Actions → VPS** (deploy SSH) | `~/.ssh/gh_actions_friendinme_ed25519` | Secret `DEPLOY_SSH_KEY` + línea en `~/.ssh/authorized_keys` |
+
+`~/.ssh/config` del usuario `cursorbot` (para GitHub):
+
+```
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_friendinme_ed25519
+  IdentitiesOnly yes
 ```
 
-En GitHub → repo → **Settings → Secrets and variables → Actions → New repository secret**:
+Remote del proyecto:
 
-| Secret | Contenido |
-|--------|-------------|
+```bash
+git remote -v
+# origin  git@github.com:Parvusmedia/friendinmeapp.git
+```
+
+---
+
+## Secrets de GitHub Actions
+
+**Ruta:** https://github.com/Parvusmedia/friendinmeapp/settings/secrets/actions  
+Pestaña **Repository secrets** (no *Variables*, no *Environment* salvo que los vincules al repo).
+
+| Secret | Valor |
+|--------|--------|
 | `DEPLOY_HOST` | `87.106.194.137` |
 | `DEPLOY_USER` | `cursorbot` |
-| `DEPLOY_SSH_KEY` | Contenido **privado** de `~/.ssh/github_friendinme_deploy` (el que **no** termina en `.pub`) |
+| `DEPLOY_SSH_KEY` | Salida completa de `cat ~/.ssh/gh_actions_friendinme_ed25519` (incluye `-----BEGIN OPENSSH PRIVATE KEY-----` … `-----END …`) |
 
-Añade en **`~/.ssh/config`** del VPS (opcional) o usa la clave por defecto para `git pull` desde el mismo usuario.
-
-Mejor: en el VPS, clave **solo para git** hacia GitHub (read access al repo), y otra clave en **GitHub Actions** para SSH al VPS — son dos pares distintos.
-
-**Flujo habitual:**
-
-- **Git clone/pull en el VPS** usa una deploy key con acceso *read/write* o *read* al repo (añadida en GitHub → Deploy keys).
-- **GitHub Actions** usa `DEPLOY_SSH_KEY` = clave privada cuya pública está en `authorized_keys` del VPS para que el runner pueda entrar por SSH.
-
-Genera en tu máquina local (o en el VPS) un par solo para CI:
+Comprobar huella de la clave pública de Actions:
 
 ```bash
-ssh-keygen -t ed25519 -f gh_actions_friendinme -N ""
+ssh-keygen -lf ~/.ssh/gh_actions_friendinme_ed25519.pub
+# SHA256:/WIEkOJESpv2yg7ny4tVf32iPP8hD6XMFr36gAgtUu0
 ```
 
-- Pega `gh_actions_friendinme.pub` en el VPS: `~/.ssh/authorized_keys` (una línea).
-- Pega el contenido de `gh_actions_friendinme` en el secret `DEPLOY_SSH_KEY`.
+Errores habituales:
 
-## 3. Sudo sin contraseña solo para reiniciar servicios (recomendado)
+- **missing server host** → falta `DEPLOY_HOST` o nombre mal escrito.
+- **Permission denied (publickey)** → `DEPLOY_SSH_KEY` incorrecta (p. ej. pegaste la de `github_friendinme_*` o solo la `.pub`).
+- Pegaste la clave **pública** en el secret → debe ser la **privada**.
 
-En el VPS:
+Más detalle: [GITHUB_ACTIONS_SECRETS.md](./GITHUB_ACTIONS_SECRETS.md)
 
-```bash
-sudo visudo -f /etc/sudoers.d/friendinme-deploy
-```
+---
 
-Contenido (ajusta usuario si no es `cursorbot`):
+## Sudo sin contraseña (reinicios en deploy)
+
+Archivo `/etc/sudoers.d/friendinme-deploy`:
 
 ```
 cursorbot ALL=(ALL) NOPASSWD: /bin/systemctl restart friendinme-api, /bin/systemctl restart friendinme-web, /bin/systemctl daemon-reload, /bin/cp /opt/apps/friendinme/deploy/friendinme-api.service /etc/systemd/system/friendinme-api.service, /bin/cp /opt/apps/friendinme/deploy/friendinme-web.service /etc/systemd/system/friendinme-web.service
 ```
 
-(El `cp` de los units permite que cada despliegue aplique cambios en `ExecStartPre` u opciones de systemd sin SSH manual.)
+```bash
+sudo visudo -c -f /etc/sudoers.d/friendinme-deploy
+```
 
-## 4. Primer despliegue en el VPS
+---
 
-Una vez el código está en GitHub:
+## Clonar el proyecto en un VPS nuevo
 
 ```bash
 sudo mkdir -p /opt/apps
 cd /opt/apps
-git clone git@github.com:Parvusmedia/friendinmeapp.git
+git clone git@github.com:Parvusmedia/friendinmeapp.git friendinme
 cd friendinme/backend
 cp .env.example .env
-nano .env   # una sola vez: DATABASE_URL, JWT, CORS, PUBLIC_BASE_URL, UPLOAD_DIR
-python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && deactivate
-alembic upgrade head && source .venv/bin/activate && python -m app.seed && deactivate
+nano .env   # DATABASE_URL, JWT, CORS, PUBLIC_BASE_URL, UPLOAD_DIR, SMTP (opcional)
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/alembic upgrade head
+.venv/bin/python -m app.seed   # opcional demo
 cd ../frontend && npm ci && npm run build
 sudo cp deploy/friendinme-*.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now friendinme-api friendinme-web
 ```
 
-## 5. A partir de ahí
+Configura deploy key + secrets de Actions como arriba.
 
-Cada merge/push a `main` ejecuta el workflow `.github/workflows/deploy.yml`: `git pull`, dependencias si hace falta, `npm run build`, `sudo systemctl restart …`.
+---
 
-Si cambias **solo secretos** en `.env`, hazlo en el VPS (o automatiza con Ansible/Vault; eso ya es otro nivel).
+## Despliegue manual (emergencia)
 
-## ¿Cambia algo si usas GitHub?
+Si Actions no está disponible:
 
-- **Código y workflow** viven en el repo.
-- **Secretos** siguen fuera del repo: `.env` en servidor y/o GitHub Secrets para generar archivos en CI (si más adelante lo automatizas).
-- El dominio y Nginx **no dependen** de GitHub: solo del DNS y del servidor.
+```bash
+/opt/apps/friendinme/scripts/deploy.sh
+```
+
+Equivalente a: pull, `pytest`, `alembic upgrade head`, `npm ci && npm run build`, restart servicios.
+
+---
+
+## SMTP (emails)
+
+No va en GitHub Secrets (por ahora). Variables en `backend/.env`:
+
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`
+- `PUBLIC_BASE_URL=https://friendinme.pmediaplus.com` (enlaces en emails de resultados)
+
+Sin SMTP configurado, la API sigue funcionando; los emails se registran en log.
+
+---
+
+## Documentación relacionada
+
+- [DESPLIEGUE_PMDIAPLUS.md](./DESPLIEGUE_PMDIAPLUS.md) — DNS, Nginx, SSL
+- [BACKUP.md](./BACKUP.md) — backups y registro de cambios
+- [REGISTRO_CAMBIOS.md](./REGISTRO_CAMBIOS.md) — historial operativo
