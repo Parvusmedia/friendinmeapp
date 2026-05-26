@@ -14,6 +14,7 @@ from app.schemas.dog_filters import DogFiltersMeta
 from app.services.ai_service import AIService
 from app.services.image_service import ImageService
 from app.utils.dependencies import get_optional_user, require_shelter_or_admin
+from app.utils.dog_photos import count_valid_photos
 
 router = APIRouter(prefix="/dogs", tags=["dogs"])
 
@@ -96,7 +97,11 @@ def list_dogs(
         except ValueError:
             pass
 
-    return q.order_by(Dog.created_at.desc()).all()
+    rows = q.order_by(Dog.created_at.desc()).all()
+    return [
+        DogRead.model_validate(d).model_copy(update={"photo_count": count_valid_photos(d)})
+        for d in rows
+    ]
 
 
 @router.post("", response_model=DogRead, status_code=status.HTTP_201_CREATED)

@@ -65,6 +65,8 @@ class DogRead(DogBase):
     ai_generated_summary: str | None = None
     created_at: datetime
     updated_at: datetime
+    """Fotos válidas en disco (≥1 KB); 0 = sin foto usable."""
+    photo_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

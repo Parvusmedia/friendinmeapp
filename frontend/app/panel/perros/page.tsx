@@ -6,7 +6,15 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { getToken, parseJwt } from "@/lib/auth";
 
-type Dog = { id: number; name: string; status: string; province: string; city: string; shelter_id?: number };
+type Dog = {
+  id: number;
+  name: string;
+  status: string;
+  province: string;
+  city: string;
+  shelter_id?: number;
+  photo_count?: number;
+};
 
 export default function PanelPerrosPage() {
   const router = useRouter();
@@ -52,7 +60,21 @@ export default function PanelPerrosPage() {
         {dogs.map((d) => (
           <div key={d.id} className="card" style={{ padding: "1rem", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
-              <strong>{d.name}</strong> <span className="tag">{d.status}</span>
+              <strong>{d.name}</strong> <span className="tag">{d.status}</span>{" "}
+              <span
+                className={`tag tag--photos${(d.photo_count ?? 0) === 0 ? " tag--photos-empty" : ""}`}
+                title={
+                  (d.photo_count ?? 0) === 0
+                    ? "Sin fotos válidas en este registro"
+                    : `${d.photo_count} foto(s) en disco`
+                }
+              >
+                {(d.photo_count ?? 0) === 0
+                  ? "Sin fotos"
+                  : d.photo_count === 1
+                    ? "1 foto"
+                    : `${d.photo_count} fotos`}
+              </span>
               <div style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
                 {d.city}, {d.province}
                 {isAdmin && d.shelter_id ? (

@@ -177,6 +177,16 @@ h3 {
   color: var(--accent);
 }
 
+.tag--photos {
+  background: #e8f4f0;
+  color: #2a6b5c;
+}
+
+.tag--photos-empty {
+  background: #fde8e8;
+  color: #b42318;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
