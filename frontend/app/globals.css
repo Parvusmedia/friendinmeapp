@@ -106,6 +106,31 @@ h3 {
   gap: 1rem;
 }
 
+.dogs-filter-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.dogs-filters-bar {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.dogs-filters-cta {
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+.dogs-listing-grid {
+  margin-top: 0;
+}
+
 @media (min-width: 640px) {
   .grid-dogs {
     gap: 1.25rem;

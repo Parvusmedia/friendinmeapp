@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { hasValidSession } from "@/lib/auth";
 
 const navLinks = [
-  { href: "/perros", label: "Perros" },
+  { href: "/#perros", label: "Perros" },
   { href: "/cuestionario", label: "Match" },
   { href: "/privacidad", label: "Privacidad" },
 ];

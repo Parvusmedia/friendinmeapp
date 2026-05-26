@@ -284,10 +284,6 @@
   box-sizing: border-box;
 }
 
-.dogsHeader {
-  margin-bottom: 1.25rem;
-}
-
 .dogsTitle {
   margin: 0 0 0.5rem;
   font-size: clamp(1.5rem, 4vw, 1.85rem);
@@ -304,28 +300,8 @@
   max-width: 40rem;
 }
 
-.dogsEmpty {
-  margin: 0;
-  padding: 1.25rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e8e4df;
-  color: #5f6877;
-}
-
-.dogsGrid {
-  margin-top: 0.5rem;
-}
-
-.dogsFooter {
-  margin: 1.5rem 0 0;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.dogsFooter a {
-  color: #2f7f6d;
-  font-weight: 600;
+.dogsHeader {
+  margin-bottom: 0.75rem;
 }
 
 @media (min-width: 1024px) {
