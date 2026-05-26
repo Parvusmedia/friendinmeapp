@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomeDogsSection } from "@/components/HomeDogsSection";
 import styles from "./page.module.css";
 
 const features = [
@@ -42,9 +43,6 @@ export default function HomePage() {
             <Link href="/refugio/solicitud" className={styles.btnSecondary}>
               Soy un refugio
             </Link>
-            <Link href="/perros" className={styles.linkPerros}>
-              Ver perros
-            </Link>
           </div>
         </div>
       </section>
@@ -64,6 +62,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <HomeDogsSection />
     </div>
   );
 }

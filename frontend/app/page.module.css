@@ -98,28 +98,6 @@
   box-shadow: 0 8px 20px rgba(20, 31, 45, 0.05);
 }
 
-.linkPerros {
-  width: 100%;
-  min-height: 3.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.12rem;
-  font-weight: 700;
-  color: #2f7f6d;
-  text-decoration: none;
-  padding: 0.7rem 0;
-  box-sizing: border-box;
-}
-
-.linkPerros::after {
-  content: "›";
-  font-size: 1.55rem;
-  line-height: 1;
-  margin-left: 0.55rem;
-  transform: translateY(-1px);
-}
-
 .features {
   width: 100%;
   padding: 1.2rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left));
@@ -256,17 +234,6 @@
     box-shadow: none;
   }
 
-  .linkPerros {
-    width: auto;
-    min-height: 2.75rem;
-    font-size: 1rem;
-    padding: 0.85rem 0;
-  }
-
-  .linkPerros::after {
-    display: none;
-  }
-
   .features {
     padding: 0 var(--home-gutter) clamp(2.5rem, 8vw, 4rem);
   }
@@ -300,5 +267,74 @@
   .cardText {
     font-size: clamp(0.98rem, 1.4vw, 1.08rem);
     color: #64748b;
+  }
+}
+
+/* Grid de perros bajo las 3 cajas */
+.dogsSection {
+  width: 100%;
+  padding: 0 max(1rem, env(safe-area-inset-right)) clamp(2.5rem, 8vw, 4rem) max(1rem, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.dogsInner {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.dogsHeader {
+  margin-bottom: 1.25rem;
+}
+
+.dogsTitle {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #172033;
+}
+
+.dogsLead {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 40rem;
+}
+
+.dogsEmpty {
+  margin: 0;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e8e4df;
+  color: #5f6877;
+}
+
+.dogsGrid {
+  margin-top: 0.5rem;
+}
+
+.dogsFooter {
+  margin: 1.5rem 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.dogsFooter a {
+  color: #2f7f6d;
+  font-weight: 600;
+}
+
+@media (min-width: 1024px) {
+  .dogsSection {
+    padding-inline: var(--home-gutter, 1.5rem);
+  }
+
+  .dogsInner {
+    max-width: var(--home-shell, 1120px);
+    margin-inline: auto;
   }
 }
