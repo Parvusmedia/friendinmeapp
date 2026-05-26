@@ -1,7 +1,18 @@
-import styles from "@/app/page.module.css";
+import defaultStyles from "@/app/page.module.css";
 import { PublicDogsListing } from "@/components/PublicDogsListing";
 
-export function HomeDogsSection() {
+type Styles = typeof defaultStyles;
+
+type Props = {
+  /** Permite usar estilos de Home1 en /home1 */
+  moduleStyles?: Styles;
+  variant?: "default" | "compact";
+};
+
+export function HomeDogsSection({ moduleStyles = defaultStyles, variant = "default" }: Props) {
+  const styles = moduleStyles;
+  const compact = variant === "compact";
+
   return (
     <section className={styles.dogsSection} aria-labelledby="home-dogs-heading" id="perros">
       <div className={styles.dogsInner}>
@@ -9,11 +20,17 @@ export function HomeDogsSection() {
           <h2 id="home-dogs-heading" className={styles.dogsTitle}>
             Perros en adopción
           </h2>
-          <p className={styles.dogsLead}>
-            Explora las fichas disponibles. Para un match orientativo con tu perfil, usa el cuestionario.
-          </p>
+          {compact ? (
+            <p className={styles.dogsLeadCompact}>
+              Filtra y explora fichas reales. El match orientativo está en el cuestionario.
+            </p>
+          ) : (
+            <p className={styles.dogsLead}>
+              Explora las fichas disponibles. Para un match orientativo con tu perfil, usa el cuestionario.
+            </p>
+          )}
         </div>
-        <PublicDogsListing />
+        <PublicDogsListing compact={compact} />
       </div>
     </section>
   );

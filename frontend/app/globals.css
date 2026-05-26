@@ -122,6 +122,13 @@ h3 {
   align-items: flex-end;
 }
 
+.dogs-filters-bar--compact {
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.06);
+}
+
 .dogs-filters-cta {
   flex: 0 0 auto;
   align-self: flex-end;

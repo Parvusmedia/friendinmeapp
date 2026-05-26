@@ -6,64 +6,70 @@ const features = [
   {
     icon: "🧩",
     title: "Compatibilidad, no moda",
-    text: "Energía, hogar, niños, otros animales y tiempo disponible importan más que la estética.",
+    text: "Energía, hogar y tiempo disponible importan más que la estética.",
   },
   {
     icon: "✓",
     title: "Transparencia",
-    text: "Si falta información en la ficha, te lo decimos. La IA nunca inventa datos del perro.",
+    text: "Si falta información en la ficha, te lo decimos.",
   },
   {
     icon: "♡",
     title: "Contacto directo",
-    text: "Cuando hay feeling, tu solicitud llega al refugio. Ellos conocen al animal en carne y hueso.",
+    text: "Tu solicitud llega al refugio que conoce al perro.",
   },
 ];
 
+/** Home2 — perros y filtros visibles antes; hero y valores más compactos. */
 export default function HomePage() {
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.inner}>
-          <p className={styles.badge}>Adopción responsable</p>
-          <h1 className={styles.title}>
-            No busques solo
-            <br /> un perro bonito.
-            <br />
-            <span className={styles.accent}>Encuentra el compañero que encaja contigo.</span>
-          </h1>
-          <p className={styles.lead}>
-            FriendInMe cruza tu estilo de vida con la ficha real de cada perro. Sin promesas mágicas: información
-            clara, compatibilidad orientativa y refugios de confianza.
-          </p>
-          <div className={styles.actions}>
+      <section className={styles.hero} aria-label="Presentación">
+        <div className={styles.heroShell}>
+          <div className={styles.heroMain}>
+            <p className={styles.badge}>Adopción responsable</p>
+            <h1 className={styles.title}>
+              Encuentra el compañero que{" "}
+              <span className={styles.accent}>encaja contigo</span>
+            </h1>
+            <p className={styles.lead}>
+              Cruza tu estilo de vida con fichas reales de refugios. Match orientativo, sin promesas mágicas.
+            </p>
+          </div>
+          <div className={styles.heroAside}>
             <Link href="/cuestionario" className={styles.btnPrimary}>
               Encontrar mi match
             </Link>
             <Link href="/refugio/solicitud" className={styles.btnSecondary}>
               Soy un refugio
             </Link>
+            <a href="#perros" className={styles.heroScroll}>
+              Ver perros ↓
+            </a>
           </div>
         </div>
       </section>
 
-      <section className={styles.features}>
-        <div className={styles.featuresGrid}>
-          {features.map((x) => (
-            <article key={x.title} className={styles.card}>
-              <div className={styles.cardIcon} aria-hidden="true">
-                {x.icon}
-              </div>
-              <div>
-                <h3 className={styles.cardTitle}>{x.title}</h3>
-                <p className={styles.cardText}>{x.text}</p>
-              </div>
-            </article>
-          ))}
+      <HomeDogsSection variant="compact" />
+
+      <section className={styles.values} aria-label="Por qué FriendInMe">
+        <div className={styles.valuesShell}>
+          <p className={styles.valuesKicker}>Por qué FriendInMe</p>
+          <div className={styles.valuesGrid}>
+            {features.map((x) => (
+              <article key={x.title} className={styles.valueCard}>
+                <span className={styles.valueIcon} aria-hidden="true">
+                  {x.icon}
+                </span>
+                <div>
+                  <h3 className={styles.valueTitle}>{x.title}</h3>
+                  <p className={styles.valueText}>{x.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
-
-      <HomeDogsSection />
     </div>
   );
 }

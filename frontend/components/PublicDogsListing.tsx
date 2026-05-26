@@ -21,7 +21,12 @@ type FiltersMeta = {
   breeds: string[];
 };
 
-export function PublicDogsListing() {
+type Props = {
+  /** Menos texto introductorio (Home2) */
+  compact?: boolean;
+};
+
+export function PublicDogsListing({ compact = false }: Props) {
   const [dogs, setDogs] = useState<PublicDog[]>([]);
   const [meta, setMeta] = useState<FiltersMeta>({ provinces: [], breeds: [] });
   const [province, setProvince] = useState("");
@@ -58,11 +63,13 @@ export function PublicDogsListing() {
 
   return (
     <>
-      <p className="dogs-filter-hint">
-        Filtra por lo básico; el match fino lo hacemos en el cuestionario. La raza es orientativa.
-      </p>
+      {!compact ? (
+        <p className="dogs-filter-hint">
+          Filtra por lo básico; el match fino lo hacemos en el cuestionario. La raza es orientativa.
+        </p>
+      ) : null}
 
-      <div className="card dogs-filters-bar">
+      <div className={`card dogs-filters-bar${compact ? " dogs-filters-bar--compact" : ""}`}>
         <div className="field" style={{ margin: 0, minWidth: 140, flex: "1 1 140px" }}>
           <label>Provincia</label>
           <select value={province} onChange={(e) => setProvince(e.target.value)} aria-label="Provincia">
