@@ -47,6 +47,12 @@ Instrucciones: `deploy/GITHUB.md`, `deploy/BACKUP.md`.
 ## Historial
 
 <!-- Las entradas nuevas se insertan debajo de esta línea (más reciente primero) -->
+### 2026-05-27 — Cron backup diario + deploy adaf662
+
+- **Qué:** Wrapper run-backup-cron.sh (03:30), retención 14 días domingos 04:00, logs en backups/logs/. Deploy manual OK: pytest 18, build Next, systemd active.
+- **Despliegue:** (completar si aplica)
+
+
 
 ### 2026-05-26 — Campañas partner en admin, solicitudes y UX compatibilidad
 
