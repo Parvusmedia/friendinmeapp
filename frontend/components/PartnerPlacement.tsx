@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
+  fetchResolvedPartnerCampaign,
   type PartnerDogContext,
   type PartnerPlacementId,
-  resolvePartnerCampaign,
+  type ResolvedPartnerCampaign,
 } from "@/lib/partner-placements";
 import styles from "./partner-placement.module.css";
 
@@ -16,7 +18,20 @@ type Props = {
 };
 
 export function PartnerPlacement({ placement, context = {}, compact = false, className = "" }: Props) {
-  const campaign = resolvePartnerCampaign(placement, context);
+  const [campaign, setCampaign] = useState<ResolvedPartnerCampaign | null>(null);
+  const dogId = context.dogId;
+  const dogName = context.dogName;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchResolvedPartnerCampaign(placement, context).then((c) => {
+      if (!cancelled) setCampaign(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [placement, dogId, dogName, context.size, context.energy_level, context.age_estimate]);
+
   if (!campaign) return null;
 
   const wrapClass = `${styles.wrap}${compact ? ` ${styles.wrapCompact}` : ""}${className ? ` ${className}` : ""}`;
@@ -41,21 +56,21 @@ export function PartnerPlacement({ placement, context = {}, compact = false, cla
         </ul>
       ) : null}
       <div className={styles.footer}>
-        {campaign.discountCode ? (
+        {campaign.discount_code ? (
           <p className={styles.discount}>
-            {campaign.discountNote ?? `Código: ${campaign.discountCode}`}
+            {campaign.discount_note ?? `Código: ${campaign.discount_code}`}
           </p>
         ) : null}
         <Link
-          href={campaign.ctaUrl}
+          href={campaign.cta_url}
           className={`btn btn-secondary ${styles.cta}`}
           target="_blank"
           rel="noopener noreferrer sponsored"
         >
-          {campaign.ctaLabel}
+          {campaign.cta_label}
         </Link>
       </div>
-      <p className={styles.sponsor}>Ofrecido por {campaign.sponsorName}</p>
+      <p className={styles.sponsor}>Ofrecido por {campaign.sponsor_name}</p>
     </aside>
   );
 }

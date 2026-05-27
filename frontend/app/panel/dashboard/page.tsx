@@ -99,6 +99,16 @@ export default function PanelDashboardPage() {
               <h3 style={{ marginTop: 0 }}>Refugios</h3>
               <p style={{ color: "var(--muted)", marginBottom: 0 }}>Alta manual y usuarios de refugio.</p>
             </Link>
+            <Link
+              href="/panel/partner-campaigns"
+              className="card"
+              style={{ padding: "1.25rem", textDecoration: "none", color: "inherit" }}
+            >
+              <h3 style={{ marginTop: 0 }}>Campañas partner</h3>
+              <p style={{ color: "var(--muted)", marginBottom: 0 }}>
+                Publicidad y recomendaciones patrocinadas en la web.
+              </p>
+            </Link>
           </>
         ) : null}
         <button

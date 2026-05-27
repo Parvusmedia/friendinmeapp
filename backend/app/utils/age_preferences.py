@@ -65,6 +65,14 @@ def estimate_age_months(age_estimate: str) -> int | None:
     return n * 12
 
 
+def age_stage_key(age_estimate: str) -> str | None:
+    """Clave única puppy|young|adult|senior si la edad es interpretable."""
+    cats = dog_age_categories(age_estimate)
+    if len(cats) == 1:
+        return next(iter(cats))
+    return None
+
+
 def dog_age_categories(age_estimate: str) -> set[str]:
     """Categoría vital única según edad declarada."""
     months = estimate_age_months(age_estimate)

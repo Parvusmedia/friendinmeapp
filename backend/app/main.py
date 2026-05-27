@@ -11,7 +11,18 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import OperationalError
 
 from app.config import get_settings
-from app.routes import admin, adopters, auth, dog_import, dogs, leads, matches, shelter_applications, shelters
+from app.routes import (
+    admin,
+    adopters,
+    auth,
+    dog_import,
+    dogs,
+    leads,
+    matches,
+    partner_campaigns,
+    shelter_applications,
+    shelters,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("friendinme")
@@ -73,5 +84,6 @@ for router in (
     matches,
     leads,
     admin,
+    partner_campaigns,
 ):
     app.include_router(router.router, prefix="/api")
