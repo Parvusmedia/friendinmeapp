@@ -2,6 +2,11 @@
 .DS_Store
 *.log
 
+# Backups locales (no versionar)
+backups/
+*.sql.gz
+friendinme_backup_*.tar.gz
+
 # Secrets (never commit)
 .env
 .env.*

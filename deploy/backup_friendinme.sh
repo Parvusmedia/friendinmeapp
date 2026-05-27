@@ -40,6 +40,16 @@ if [[ -f "$REGISTRO_SRC" ]]; then
   echo "==> Registro de cambios copiado"
 fi
 
+DOCS_DIR="$MANIFEST_DIR/deploy_docs"
+mkdir -p "$DOCS_DIR"
+for f in "$SCRIPT_DIR"/*.md; do
+  [[ -f "$f" ]] && cp "$f" "$DOCS_DIR/"
+done
+if [[ -f "$PROJECT_ROOT/README.md" ]]; then
+  cp "$PROJECT_ROOT/README.md" "$DOCS_DIR/PROJECT_README.md"
+fi
+echo "==> Documentación deploy/ + README copiada"
+
 if [[ -d "$UPLOAD_DIR" ]]; then
   UP_OUT="$MANIFEST_DIR/uploads_${STAMP}.tar.gz"
   tar -czf "$UP_OUT" -C "$(dirname "$UPLOAD_DIR")" "$(basename "$UPLOAD_DIR")"

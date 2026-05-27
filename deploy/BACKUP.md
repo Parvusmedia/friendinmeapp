@@ -70,18 +70,29 @@ export PGPASSWORD='tu_password_postgres'
 /opt/apps/friendinme/deploy/backup_friendinme.sh
 ```
 
-Genera en `BACKUP_DIR` (por defecto `/var/backups/friendinme`):
+Genera en `BACKUP_DIR` (por defecto `/var/backups/friendinme`; si no hay permisos de escritura, usar otro directorio):
+
+```bash
+BACKUP_DIR=/opt/apps/friendinme/backups PGPASSWORD=... /opt/apps/friendinme/deploy/backup_friendinme.sh
+```
 
 | Artefacto | Contenido |
 |-----------|-----------|
-| `friendinme_backup_YYYYMMDD_HHMMSS.tar.gz` | Dump SQL + uploads + `REGISTRO_CAMBIOS.md` + `manifest.txt` |
+| `friendinme_backup_YYYYMMDD_HHMMSS.tar.gz` | Dump SQL + uploads + `REGISTRO_CAMBIOS.md` + `deploy_docs/*.md` + `manifest.txt` |
 | `REGISTRO_CAMBIOS_LATEST.md` | Última copia del registro |
 | `friendinme_YYYYMMDD_HHMMSS.sql.gz` | Solo BD |
 | `latest_full_backup.tar.gz` | Enlace al último tarball |
 
 `backup_pg.sh` redirige al script completo.
 
-Cada tarball incluye `manifest.txt` con rutas y fecha; el registro operativo va en `REGISTRO_CAMBIOS.md` dentro del backup.
+Cada tarball incluye:
+
+- `manifest.txt` — fecha, hostname, commit git, estado de systemd
+- `REGISTRO_CAMBIOS.md` — historial operativo
+- `deploy_docs/` — copia de `deploy/*.md` y `README.md` del proyecto
+- `*.sql.gz` y `uploads_*.tar.gz` si existen
+
+Copia suelta en el directorio de backups: `REGISTRO_CAMBIOS_LATEST.md` y `friendinme_YYYYMMDD_HHMMSS.sql.gz`.
 
 ---
 

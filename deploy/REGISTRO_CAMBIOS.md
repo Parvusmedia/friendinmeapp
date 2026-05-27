@@ -48,6 +48,11 @@ Instrucciones: `deploy/GITHUB.md`, `deploy/BACKUP.md`.
 
 <!-- Las entradas nuevas se insertan debajo de esta línea (más reciente primero) -->
 
+### 2026-05-26 — Campañas partner en admin, solicitudes y UX compatibilidad
+
+- **Qué:** Tabla `partner_campaigns` (migración 0007). Panel admin `/panel/partner-campaigns`: activar/desactivar, fechas inicio/fin, textos, segmentación por perro. API pública `GET /api/partner-campaigns/resolve`. Bloques en ficha, resultados, contacto y mis solicitudes. Solicitudes: sin duplicar por perro (`409`), `/mis-solicitudes`, cancelación adoptante (`cancelled`). Match: avisos «no consta» en advertencias y tope de puntuación; resumen rápido estructurado (sin columnas duplicadas). Panel perros: selector de estado (disponible/adoptado/etc.). Contacto: perro visible en formulario.
+- **Despliegue:** `git push origin main` → Actions + `alembic upgrade head`. Backup: `deploy/backup_friendinme.sh` (incluye docs).
+
 ### 2026-05-25 — GitHub, CI/CD y mejoras de producto
 
 - **Qué:** Repo `Parvusmedia/friendinmeapp`. Deploy automático con GitHub Actions (secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`). CI: pytest + build. Claves SSH: `github_friendinme_ed25519` (git) y `gh_actions_friendinme_ed25519` (Actions). Mejoras: rate limit, magic link resultados, match breakdown, WhatsApp contacto, export CSV adoptantes, stats panel, SEO sitemap, `next/image` en fotos.
@@ -105,6 +110,10 @@ Instrucciones: `deploy/GITHUB.md`, `deploy/BACKUP.md`.
 | Fotos no se ven | `UPLOAD_DIR`, nginx `location /media/`, permisos `cursorbot` |
 | Import falla permisos | `chown cursorbot:cursorbot /var/lib/friendinme/import_staging` |
 | Login rechazado | Emails demo `@friendinme.app`, migraciones al día |
+| Bloque partner no sale | Campaña activa y en fechas; `GET /api/partner-campaigns/resolve?placement=…`; panel admin |
+| Solicitud duplicada | Normal: `409` — ver `/mis-solicitudes` |
+| Perro no en listado público | Estado debe ser **disponible** en panel perros |
+| Score compatibilidad alto con huecos | Recalcular en `/resultados`; reglas en `match_engine.py` |
 
 **Logs:**
 
