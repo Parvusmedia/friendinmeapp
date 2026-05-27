@@ -34,3 +34,24 @@ def test_listing_merge_narrows_adopter():
     merged = merge_criteria(base, listing)
     assert merged.sizes == ("medium",)
     assert merged.energy_level == "medium"
+
+
+def test_province_does_not_exclude_dogs():
+    dogs = [
+        _Dog(id=1, size=DogSize.small, energy=EnergyLevel.medium, province="Madrid", breed="Galgo"),
+        _Dog(id=2, size=DogSize.small, energy=EnergyLevel.medium, province="Alicante", breed="Galgo"),
+    ]
+    criteria = MatchFilterCriteria(sizes=("small",), energy_level="medium", province="Alicante")
+    out = filter_dogs_by_criteria(dogs, criteria)
+    assert [d.id for d in out] == [1, 2]
+    assert criteria.is_restrictive()
+
+
+def test_match_results_sort_key_prefers_province_at_equal_score():
+    from app.services.match_candidates import match_results_sort_key
+
+    d_near = _Dog(id=1, size=DogSize.small, energy=EnergyLevel.low, province="Alicante", breed="Mestizo")
+    d_far = _Dog(id=2, size=DogSize.small, energy=EnergyLevel.low, province="Madrid", breed="Mestizo")
+    k_near = match_results_sort_key(d_near, 80.0, preferred_province="Alicante")
+    k_far = match_results_sort_key(d_far, 80.0, preferred_province="Alicante")
+    assert k_near < k_far

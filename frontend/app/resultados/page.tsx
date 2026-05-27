@@ -84,24 +84,47 @@ function ResultadosInner() {
   const loadDogsAndRows = useCallback(
     async (results: MatchRow[], aid: string): Promise<boolean> => {
       if (!results.length) return false;
-      let sorted = [...results].sort((a, b) => b.compatibility_score - a.compatibility_score);
-      if (highlightDogId) {
-        const hid = Number(highlightDogId);
-        sorted = [...sorted].sort((a, b) => {
-          if (a.dog_id === hid) return -1;
-          if (b.dog_id === hid) return 1;
-          return b.compatibility_score - a.compatibility_score;
-        });
+
+      let provincePref = "";
+      try {
+        const profile = (await apiFetch(`/api/adopters/${aid}`)) as { province_preference?: string };
+        provincePref = (profile.province_preference || "").trim().toLowerCase();
+      } catch {
+        /* ignore */
       }
-      const enriched = await Promise.all(sorted.map((r) => enrichRow(aid, r)));
-      setRows(enriched);
+
       const pairs = await Promise.all(
-        enriched.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
+        results.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
       );
       const m: Record<number, Dog> = {};
       pairs.forEach(([id, d]) => {
         m[id] = d;
       });
+
+      const provinceRank = (dogId: number) => {
+        if (!provincePref) return 0;
+        return m[dogId]?.province?.trim().toLowerCase() === provincePref ? 0 : 1;
+      };
+
+      let sorted = [...results].sort((a, b) => {
+        const scoreDiff = b.compatibility_score - a.compatibility_score;
+        if (scoreDiff !== 0) return scoreDiff;
+        const provDiff = provinceRank(a.dog_id) - provinceRank(b.dog_id);
+        if (provDiff !== 0) return provDiff;
+        return (m[a.dog_id]?.province || "").localeCompare(m[b.dog_id]?.province || "", "es");
+      });
+
+      if (highlightDogId) {
+        const hid = Number(highlightDogId);
+        sorted = [...sorted].sort((a, b) => {
+          if (a.dog_id === hid) return -1;
+          if (b.dog_id === hid) return 1;
+          return 0;
+        });
+      }
+
+      const enriched = await Promise.all(sorted.map((r) => enrichRow(aid, r)));
+      setRows(enriched);
       setDogs(m);
       return true;
     },
@@ -308,7 +331,7 @@ function ResultadosInner() {
         <h1 style={{ marginTop: 0 }}>Sin matches por ahora</h1>
         <div className={styles.emptyBox}>
           <p>
-            No hay perros publicados que cumplan <strong>todos</strong> los filtros de tu cuestionario al mismo tiempo.
+            No hay perros publicados que encajen con los filtros de tamaño, energía, raza o edad de tu cuestionario.
             {typeof matchMeta?.candidates_count === "number" ? (
               <>
                 {" "}

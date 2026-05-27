@@ -23,7 +23,8 @@ class MatchFilterCriteria:
     age_ranges: tuple[str, ...] = ()
 
     def is_restrictive(self) -> bool:
-        return bool(self.sizes or self.energy_level or self.province or self.breeds or self.age_ranges)
+        """Filtros que excluyen perros del universo de match (la provincia no cuenta)."""
+        return bool(self.sizes or self.energy_level or self.breeds or self.age_ranges)
 
     def summary_es(self) -> str:
         parts: list[str] = []
@@ -33,13 +34,16 @@ class MatchFilterCriteria:
         if self.energy_level:
             labels = {"low": "baja", "medium": "media", "high": "alta"}
             parts.append(f"energía {labels.get(self.energy_level, self.energy_level)}")
-        if self.province:
-            parts.append(f"provincia {self.province}")
         if self.breeds:
             parts.append("raza " + ", ".join(self.breeds))
         if self.age_ranges:
             parts.append("edad " + ", ".join(AGE_LABELS_ES.get(a, a) for a in self.age_ranges))
         return "; ".join(parts) if parts else "sin filtros de preferencia"
+
+    def province_sort_hint_es(self) -> str | None:
+        if not self.province:
+            return None
+        return f"orden por cercanía a {self.province}"
 
 
 def criteria_from_adopter(adopter: AdopterProfile) -> MatchFilterCriteria:
@@ -117,8 +121,6 @@ def filter_dogs_by_criteria(dogs: list[Dog], criteria: MatchFilterCriteria) -> l
             continue
         if criteria.energy_level and dog.energy_level.value != criteria.energy_level:
             continue
-        if criteria.province and dog.province.strip().lower() != criteria.province.lower():
-            continue
         if not _dog_matches_breed(dog, criteria.breeds):
             continue
         if criteria.age_ranges and not dog_matches_age_preference(dog.age_estimate, list(criteria.age_ranges)):
@@ -144,3 +146,28 @@ def load_match_candidate_dogs(
     base = db.query(Dog).filter(Dog.status == DogStatus.available).order_by(Dog.id.asc()).all()
     filtered = filter_dogs_by_criteria(base, criteria)
     return filtered, criteria
+
+
+def province_proximity_rank(dog: Dog, preferred_province: str | None) -> int:
+    """0 = misma provincia preferida; 1 = otra (solo desempate tras el score)."""
+    pref = (preferred_province or "").strip()
+    if not pref:
+        return 0
+    if dog.province.strip().lower() == pref.lower():
+        return 0
+    return 1
+
+
+def match_results_sort_key(
+    dog: Dog,
+    score: float,
+    *,
+    preferred_province: str | None,
+) -> tuple:
+    """Mayor score primero; a igual score, perros en la provincia preferida."""
+    return (
+        -score,
+        province_proximity_rank(dog, preferred_province),
+        dog.province.strip().lower(),
+        dog.id,
+    )

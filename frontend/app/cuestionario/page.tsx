@@ -404,6 +404,10 @@ function CuestionarioInner() {
           onChange={(e) => set("province_preference", e.target.value)}
           placeholder="Ej. Madrid"
         />
+        <p style={{ color: "var(--muted)", fontSize: "0.88rem", margin: "0.35rem 0 0" }}>
+          No excluye perros de otras provincias: solo prioriza los más cercanos cuando el porcentaje de
+          compatibilidad es similar.
+        </p>
       </div>
     </>
   );
