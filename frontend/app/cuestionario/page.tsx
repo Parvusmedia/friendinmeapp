@@ -237,16 +237,13 @@ function CuestionarioInner() {
       body: JSON.stringify(body),
     })) as { results: unknown[]; candidates_count?: number; filters_applied?: string | null };
 
-    if (match.filters_applied) {
-      sessionStorage.setItem(
-        "fi_last_match_meta",
-        JSON.stringify({
-          candidates_count: match.candidates_count ?? 0,
-          filters_applied: match.filters_applied,
-        })
-      );
-    }
-
+    sessionStorage.setItem(
+      "fi_last_match_meta",
+      JSON.stringify({
+        candidates_count: match.candidates_count ?? 0,
+        filters_applied: match.filters_applied ?? "",
+      })
+    );
     sessionStorage.setItem("fi_last_match", JSON.stringify(match));
     const email = (form.email || emailInput).trim();
     persistAdopterSession(id, email);

@@ -67,6 +67,7 @@ function ResultadosInner() {
   const [shareOk, setShareOk] = useState(false);
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const [emailBusy, setEmailBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [matchMeta, setMatchMeta] = useState<{ candidates_count: number; filters_applied: string } | null>(
     null
   );
@@ -80,30 +81,48 @@ function ResultadosInner() {
     }
   }, []);
 
-  const loadDogsAndRows = useCallback(async (results: MatchRow[], aid: string) => {
-    let sorted = [...results].sort((a, b) => b.compatibility_score - a.compatibility_score);
-    if (highlightDogId) {
-      const hid = Number(highlightDogId);
-      sorted = [...sorted].sort((a, b) => {
-        if (a.dog_id === hid) return -1;
-        if (b.dog_id === hid) return 1;
-        return b.compatibility_score - a.compatibility_score;
+  const loadDogsAndRows = useCallback(
+    async (results: MatchRow[], aid: string): Promise<boolean> => {
+      if (!results.length) return false;
+      let sorted = [...results].sort((a, b) => b.compatibility_score - a.compatibility_score);
+      if (highlightDogId) {
+        const hid = Number(highlightDogId);
+        sorted = [...sorted].sort((a, b) => {
+          if (a.dog_id === hid) return -1;
+          if (b.dog_id === hid) return 1;
+          return b.compatibility_score - a.compatibility_score;
+        });
+      }
+      const enriched = await Promise.all(sorted.map((r) => enrichRow(aid, r)));
+      setRows(enriched);
+      const pairs = await Promise.all(
+        enriched.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
+      );
+      const m: Record<number, Dog> = {};
+      pairs.forEach(([id, d]) => {
+        m[id] = d;
       });
-    }
-    const enriched = await Promise.all(sorted.map((r) => enrichRow(aid, r)));
-    setRows(enriched);
-    const pairs = await Promise.all(
-      enriched.map((r) => apiFetch(`/api/dogs/${r.dog_id}`).then((d) => [r.dog_id, d as Dog] as const))
-    );
-    const m: Record<number, Dog> = {};
-    pairs.forEach(([id, d]) => {
-      m[id] = d;
-    });
-    setDogs(m);
-  }, [highlightDogId]);
+      setDogs(m);
+      return true;
+    },
+    [highlightDogId]
+  );
 
   useEffect(() => {
+    let cancelled = false;
+
+    const finish = (hasRows: boolean) => {
+      if (!cancelled) setLoading(false);
+      if (!cancelled && !hasRows) setRows([]);
+    };
+
+    const applyResults = async (results: MatchRow[], aid: string) => {
+      const ok = await loadDogsAndRows(results, aid);
+      finish(ok);
+    };
+
     if (token && !adopterId) {
+      setLoading(true);
       apiFetch(`/api/adopters/verify-results-token?token=${encodeURIComponent(token)}`)
         .then((v) => {
           const data = v as { valid: boolean; adopter_profile_id: number | null };
@@ -113,10 +132,16 @@ function ResultadosInner() {
             router.replace(`/resultados?${q.toString()}`);
           } else {
             setErr("El enlace ha caducado o no es válido. Solicita uno nuevo desde el cuestionario.");
+            finish(false);
           }
         })
-        .catch(() => setErr("No se pudo validar el enlace."));
-      return;
+        .catch(() => {
+          setErr("No se pudo validar el enlace.");
+          finish(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (!adopterId) {
@@ -125,18 +150,31 @@ function ResultadosInner() {
         const q = new URLSearchParams({ adopter: String(stored) });
         if (highlightDogId) q.set("dog", highlightDogId);
         router.replace(`/resultados?${q.toString()}`);
-        return;
+        return () => {
+          cancelled = true;
+        };
       }
       setErr("Falta el identificador del cuestionario. Vuelve a completarlo.");
-      return;
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
     }
+
+    setLoading(true);
+    setErr(null);
 
     const raw = sessionStorage.getItem("fi_last_match");
     if (raw) {
       try {
-        const data = JSON.parse(raw) as { results: MatchRow[] };
-        loadDogsAndRows(data.results, adopterId).catch(() => setErr("No se pudieron leer los resultados."));
-        return;
+        const data = JSON.parse(raw) as { results?: MatchRow[] };
+        void applyResults(data.results ?? [], adopterId).catch(() => {
+          if (!cancelled) setErr("No se pudieron leer los resultados.");
+          finish(false);
+        });
+        return () => {
+          cancelled = true;
+        };
       } catch {
         /* fallback API */
       }
@@ -152,11 +190,7 @@ function ResultadosInner() {
           warnings: string[];
           ai_explanation: string | null;
         }[];
-        if (!list.length) {
-          setErr("No hay resultados guardados. Completa el cuestionario de nuevo.");
-          return;
-        }
-        return loadDogsAndRows(
+        return applyResults(
           list.map((r) => ({
             dog_id: r.dog_id,
             compatibility_score: r.compatibility_score,
@@ -169,7 +203,14 @@ function ResultadosInner() {
           adopterId
         );
       })
-      .catch(() => setErr("No hay resultados. Repite el cuestionario."));
+      .catch(() => {
+        if (!cancelled) setErr("No hay resultados. Repite el cuestionario.");
+        finish(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [adopterId, highlightDogId, router, token, loadDogsAndRows]);
 
   const recalculate = async () => {
@@ -186,9 +227,23 @@ function ResultadosInner() {
       const match = (await apiFetch("/api/matches", {
         method: "POST",
         body: JSON.stringify(body),
-      })) as { results: MatchRow[] };
+      })) as {
+        results: MatchRow[];
+        candidates_count?: number;
+        filters_applied?: string | null;
+      };
       sessionStorage.setItem("fi_last_match", JSON.stringify(match));
-      await loadDogsAndRows(match.results, adopterId);
+      sessionStorage.setItem(
+        "fi_last_match_meta",
+        JSON.stringify({
+          candidates_count: match.candidates_count ?? 0,
+          filters_applied: match.filters_applied ?? "",
+        })
+      );
+      setLoading(true);
+      const ok = await loadDogsAndRows(match.results, adopterId);
+      setLoading(false);
+      if (!ok) setRows([]);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error al recalcular");
     } finally {
@@ -238,10 +293,50 @@ function ResultadosInner() {
     );
   }
 
-  if (!rows.length) {
+  if (loading) {
     return (
       <div className={`container ${styles.page}`}>
         <p style={{ color: "var(--muted)" }}>Cargando resultados…</p>
+      </div>
+    );
+  }
+
+  if (!rows.length) {
+    const filtersNote = matchMeta?.filters_applied?.trim();
+    return (
+      <div className={`container ${styles.page}`}>
+        <h1 style={{ marginTop: 0 }}>Sin matches por ahora</h1>
+        <div className={styles.emptyBox}>
+          <p>
+            No hay perros publicados que cumplan <strong>todos</strong> los filtros de tu cuestionario al mismo tiempo.
+            {typeof matchMeta?.candidates_count === "number" ? (
+              <>
+                {" "}
+                Analizamos <strong>{matchMeta.candidates_count}</strong> candidato
+                {matchMeta.candidates_count === 1 ? "" : "s"} con esos criterios.
+              </>
+            ) : null}
+          </p>
+          {filtersNote ? (
+            <p className={styles.emptyFilters}>
+              <strong>Filtros activos:</strong> {filtersNote}
+            </p>
+          ) : null}
+          <p style={{ color: "var(--muted)", marginBottom: 0 }}>
+            Prueba a ampliar provincia, energía o razas en el cuestionario, o explora el catálogo completo.
+          </p>
+        </div>
+        <div className={styles.toolbar}>
+          <Link href="/cuestionario" className="btn btn-primary">
+            Editar cuestionario
+          </Link>
+          <Link href="/perros" className="btn btn-secondary">
+            Ver todos los perros
+          </Link>
+          <button type="button" className="btn btn-secondary" onClick={recalculate} disabled={recalculating}>
+            {recalculating ? "Recalculando…" : "Volver a calcular"}
+          </button>
+        </div>
       </div>
     );
   }

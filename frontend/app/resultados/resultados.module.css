@@ -9,6 +9,25 @@
   max-width: 720px;
 }
 
+.emptyBox {
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface, #f8faf9);
+  max-width: 720px;
+  line-height: 1.55;
+}
+
+.emptyBox p {
+  margin: 0 0 0.75rem;
+}
+
+.emptyFilters {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
