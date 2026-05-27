@@ -337,6 +337,43 @@ function CuestionarioInner() {
       }
 
       persistAdopterSession(id, form.email || emailInput);
+
+      // Opción A: aviso si la combinación de filtros deja 0 (o muy pocos) candidatos.
+      try {
+        const meta = (await apiFetch(`/api/matches/candidates?adopter_profile_id=${id}`)) as {
+          candidates_count: number;
+          filters_applied?: string | null;
+        };
+        const n = meta.candidates_count ?? 0;
+        if (n === 0) {
+          const ok = window.confirm(
+            `Con tus filtros actuales no hay perros candidatos.\n\nFiltros: ${
+              meta.filters_applied || "sin filtros"
+            }\n\n¿Quieres ampliar filtros antes de calcular?`
+          );
+          if (!ok) {
+            // continuar igualmente (verá pantalla "sin matches")
+          } else {
+            setErr("Ajusta tus filtros para ver más perros compatibles.");
+            setStep(dogId ? 1 : 0);
+            return;
+          }
+        } else if (n > 0 && n < 3) {
+          const ok = window.confirm(
+            `Tus filtros dejan pocos perros candidatos (${n}).\n\nFiltros: ${
+              meta.filters_applied || "sin filtros"
+            }\n\n¿Continuar con el cálculo?`
+          );
+          if (!ok) {
+            setErr("Ajusta tus filtros para ver más opciones.");
+            setStep(dogId ? 1 : 0);
+            return;
+          }
+        }
+      } catch {
+        // Si falla el precheck, continuamos (no bloquea).
+      }
+
       await runMatch(id);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error al guardar");

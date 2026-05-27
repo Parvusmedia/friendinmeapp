@@ -59,6 +59,22 @@ def preview_match(
     return _comp_to_result(comp)
 
 
+@router.get("/candidates")
+def candidates_count(
+    adopter_profile_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+) -> dict:
+    adopter = db.get(AdopterProfile, adopter_profile_id)
+    if not adopter:
+        raise HTTPException(status_code=404, detail="Perfil adoptante no encontrado")
+    dogs, criteria = load_match_candidate_dogs(db, adopter=adopter, dog_id=None, listing=None)
+    return {
+        "adopter_profile_id": adopter.id,
+        "candidates_count": len(dogs),
+        "filters_applied": criteria.summary_es() if criteria.is_restrictive() else None,
+    }
+
+
 @router.post("", response_model=MatchRunResponse)
 async def run_matches(
     payload: MatchRunRequest,
